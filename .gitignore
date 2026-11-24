@@ -16,3 +16,6 @@ __pycache__/
 *.pyc
 node_modules/
 dist/
+
+# Draft screenshots (final ones are committed without the _draft prefix)
+screenshots/_draft*
