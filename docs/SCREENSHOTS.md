@@ -4,9 +4,9 @@ The submission needs three named files in `screenshots/` (see the brief's `docs/
 
 | File | What it must show | When it can be taken | Status |
 |---|---|---|---|
-| `workflow.png` | The **full workflow canvas** in n8n, all branches visible | After the v2 workflow is finished | Draft only (`_draft_workflow_phase1.jpg`, 5 nodes) |
-| `audit_log.png` | The **Audit Log** tab with **all 25 rows** (one per email) | After all 25 emails ran | Not possible yet |
-| `tickets.png` | The **Tickets** tab with the tickets created, including E21 updating E04's ticket | After all 25 emails ran | Not possible yet |
+| `workflow.png` | The **full workflow canvas** in n8n, all branches visible | After the v2 workflow is finished | Done 2026-11-24 (v2 canvas, published) |
+| `audit_log.png` | The **Audit Log** tab with **all 25 rows** (one per email) | After all 25 emails ran | Done 2026-11-24 (E01 to E25, sheet zoom 75%, reply text clipped to one line) |
+| `tickets.png` | The **Tickets** tab with the tickets created, including E21 updating E04's ticket | After all 25 emails ran | Done 2026-11-24 (TKT-001 to TKT-009, TKT-002 lists E04 and E21) |
 
 ## Extra shots I will also take (not required, they help the README and video)
 
