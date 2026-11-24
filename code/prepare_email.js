@@ -7,9 +7,14 @@
 // from prompts/classify_v1.md and config/policy.json. Edit those files, not the
 // workflow JSON.
 
-// gemini-2.5-flash returned 404 "no longer available to new users" on 2026-11-24,
-// and the API pointed to gemini-3.8-flash. Change here if the name changes again.
-const MODEL = 'gemini-3.8-flash';
+// Model history on 2026-11-24 (see docs/BUILD_LOG.md):
+//   gemini-2.5-flash      -> 404, no longer available to new users
+//   gemini-3.8-flash      -> 503, high demand on the free tier
+//   gemini-flash-latest   -> 503, same
+//   gemini-flash-lite-latest -> works (resolved to gemini-3.5-flash-lite)
+// "-latest" aliases avoid 404s when Google renames models, but they can change
+// under us. The exact model used is stored in every Audit Log row ("model").
+const MODEL = 'gemini-flash-lite-latest';
 const PROMPT_VERSION = 'v1';
 
 const email = $json.body || {};
