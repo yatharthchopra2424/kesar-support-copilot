@@ -252,6 +252,7 @@ What would break first, in the order I expect it:
 | `config/policy.json` | Policy numbers in one place |
 | `eval/` | Answer key, scorer, offline tests, saved v1 and v2 runs and scores |
 | `console/` | Ops Console source (Vite, React, TypeScript) |
+| `video/` | Source of the walkthrough video (HyperFrames), narration text, rebuild steps |
 | `docs/` | Build log, screenshot checklist |
 | `data/`, `schemas/`, `scripts/` | Provided assignment material, plus my build scripts |
 | `sheet/` | Column headers for the Sheet tabs |
