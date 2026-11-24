@@ -23,7 +23,8 @@ Take-home for the AI Automation Intern role. An n8n workflow that reads a suppor
 
 ```
 email -> webhook -> prepare -> Gemini classify -> validate -> fetch orders -> resolve and decide (code)
-      -> reply agent (get_order, search_faq) -> output guard (code) -> assemble
+      -> needs reply? -> yes: reply agent (get_order, search_faq) -> output guard (code) -> assemble
+                      -> no (spam, thanks): skip the agent -> assemble
       -> ticket needed? -> read tickets -> plan ticket (code) -> write ticket -> build audit row -> write audit row
 ```
 
@@ -35,6 +36,7 @@ email -> webhook -> prepare -> Gemini classify -> validate -> fetch orders -> re
 | Validate classification | Checks enums and the order id format, repairs small problems, and falls back to `other` + needs human if the output is unusable | Invalid JSON can never crash the run. 25/25 were valid on the first try |
 | Fetch orders | Stands in for the store's order API (`data/orders.json`) | The order source is one node, so swapping in a real API touches one place |
 | Resolve order and decide | Finds the order by id, then by sender email. Checks the sender owns it. Works out the return window, damage window, refund amount, ticket priority, needs human and the exact action | Every hard rule lives in code, so an email cannot talk its way past it |
+| Needs reply? | An IF node on the code's decision. Spam and thank-you emails skip the agent and are only logged | No LLM call is spent where no reply is wanted (E06, E25) |
 | Reply agent | Gemini agent with two tools. `get_order` returns only the order the code authorised for this sender. `search_faq` returns the matching FAQ sections | Satisfies the agent-with-tools requirement and keeps the draft grounded |
 | Output guard | Repairs emoji and sign-off. Rejects the draft if it has a medical claim, an amount or link not in the facts, an "approved" promise, a request for UPI or an OTP too early, or leaked order facts | A rejected draft is replaced with a safe holding reply and the email goes to a human |
 | Plan ticket | Reads the Tickets tab and decides create, update or no-op. One open ticket per order | This is the duplicate-ticket rule. E04 and E21 share TKT-002 |
