@@ -5,7 +5,7 @@ Take-home for the AI Automation Intern role. An n8n workflow that reads a suppor
 | Link | |
 |---|---|
 | Google Sheet "Kesar Support" (Audit Log, Tickets, plus the v1 baseline tabs) | https://docs.google.com/spreadsheets/d/1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8/edit (view access switched on at submission) |
-| 5-minute walkthrough | _link added at submission_ |
+| 5-minute walkthrough (4:30) | [Google Drive](https://drive.google.com/file/d/1yOfnecw7804k8LiV5HBkO4f6UzFJGp3i/view?usp=sharing) |
 | Ops Console (every step of every email) | https://kesar-ops-console.yc9891966.workers.dev |
 | Test report | [TEST_REPORT.md](./TEST_REPORT.md) |
 
