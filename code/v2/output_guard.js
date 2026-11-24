@@ -44,11 +44,12 @@ const bang = (reply.match(/!/g) || []).length;
 if (bang > 1) { let n = 0; reply = reply.replace(/!/g, () => (++n === 1 ? '!' : '.')); repaired.push('exclamations_limited'); }
 
 // ---- 3. checks ----
-const body = reply.split('\n').slice(1).join('\n').replace(SIGN, '').trim(); // drop greeting line and sign-off
+// Body = reply without the greeting ("Hi Name," on its own line or in front of the text) and the sign-off.
+const body = reply.replace(SIGN, '').replace(/^\s*(hi|hello|dear|namaste|नमस्ते)\b[^,\n।]{0,40}[,।]\s*/i, '').trim();
 const sentences = body.split(/(?<=[.!?।])\s+/).filter((s) => s.trim().length > 2);
 if (sentences.length < 3 || sentences.length > 6) soft.push('length_' + sentences.length + '_sentences');
 if (/\b[A-Z]{5,}\b/.test(body.replace(/KC-\d+|UPI|IFSC|COD|OTP|CVV/g, ''))) soft.push('all_caps_word');
-if (d.order_lookup.found && d.action === 'draft_reply' && ctx.cls.intent === 'order_status' && !steps.some((s) => s.action && s.action.tool === 'get_order')) soft.push('did_not_call_get_order');
+if (d.order_lookup.found && d.action === 'draft_reply' && ctx.cls.intent === 'order_status' && !steps.some((s) => s.action && String(s.action.tool).indexOf('get_order') === 0)) soft.push('did_not_call_get_order');
 
 // medical claims: any cure/treat word that is not negated shortly before it
 const MED = /\b(cure|cures|cured|curing|treat|treats|treated|treating|heal|heals|healed|remedy|therapy)\b/gi;
@@ -77,13 +78,19 @@ if (/\b(approved|will be credited|has been credited|has been refunded|within 24 
 
 // never ask for payment details early, and never ask for secrets
 for (const s of sentences) {
-  if (/(share|send|provide|give|reply with|let us know|need).{0,40}\b(UPI|account number|IFSC|bank details)/i.test(s) && !/(after|once|following|when).{0,30}pick/i.test(s)) { hard.push('asks_payment_details_early'); break; }
+  // A sentence is fine if it says NOT to share details, or says we will ask only after the pickup.
+  const negated = /\b(do not|don't|dont|no need|not need|never|won't|will not)\b/i.test(s);
+  const afterPickup = /\b(after|once|following|when)\b[^.]{0,60}\bpick/i.test(s);
+  if (/(share|send|provide|give|reply with|let us know|need|ask).{0,40}\b(UPI|account number|IFSC|bank details)/i.test(s) && !negated && !afterPickup) { hard.push('asks_payment_details_early'); break; }
   if (/(share|send|provide|enter|tell).{0,30}\b(OTP|PIN|CVV|password)\b/i.test(s) && !/\b(never|do not|don't|won't)\b/i.test(s)) { hard.push('asks_for_secret'); break; }
 }
 
-// privacy: when the sender is not the owner, the reply must contain no order facts at all
+// privacy: when the sender is not the owner, the reply must contain no order facts.
+// We look for facts (a link, a courier name, a date, a pincode, "was delivered"), not for words
+// like "tracking" or "address", because a good refusal says "we cannot share tracking or address".
 if (d.order_lookup.privacy_blocked) {
-  if (/track\.example|\b(shipped|delivered|out for delivery|dispatched|tracking|courier|address)\b/i.test(reply)) hard.push('privacy_leak');
+  const FACT = /track\.example|swiftship|bharatexpress|\b20\d\d-\d\d-\d\d\b|\b\d{6}\b|\b(has been|was|is|got|were) (shipped|delivered|dispatched|out for delivery|cancelled)\b|\b(estimated|expected) (delivery|to arrive|to reach)\b/i;
+  if (FACT.test(reply)) hard.push('privacy_leak');
 }
 
 // ---- 4. unsafe draft: replace it with a safe holding reply ----

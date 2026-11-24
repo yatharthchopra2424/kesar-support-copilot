@@ -73,7 +73,7 @@ const row = {
       { name: 'classify', model: prep.model, ms: meta.ms, valid_first_try: meta.valid_first_try, fallback: meta.fallback, tokens_in: meta.tokens_in, tokens_out: meta.tokens_out },
       { name: 'decide', action: d.action, lookup: d.order_lookup.method },
       { name: 'agent', tools: fin.tools_used, tokens_in_est: fin.tokens_agent_in_est, tokens_out_est: fin.tokens_agent_out_est, tokens_are_estimates: true },
-      { name: 'guard', flags: fin.guard },
+      { name: 'guard', flags: fin.guard, rejected_draft: fin.original_reply || undefined },
       { name: 'ticket', mode: ticketMode || 'none', id: ticketId }
     ]
   })

@@ -26,7 +26,7 @@ if (g) {
 return {
   json: {
     ctx, guard: g ? g.guard : null, tools_used: g ? g.tools_used : [],
-    reply, reasons: Array.from(new Set(reasons)),
+    reply, original_reply: g ? g.original_reply : '', reasons: Array.from(new Set(reasons)),
     needs_human: reasons.length > 0,
     tokens_agent_in_est: tokensAgentIn, tokens_agent_out_est: tokensAgentOut
   }

@@ -64,6 +64,17 @@ const e07 = decide('E07', { intent: 'order_status', order_id: 'KC-1046' });
 const leak = guard(e07.nodes, { reply: 'Hi Rohan,\n\nThe order was delivered to Adyar yesterday. Tracking is on the way. Thank you for writing in.' + SIGN, grounded: true });
 check('E07 privacy leak is a hard flag', leak.guard.hard.includes('privacy_leak'), JSON.stringify(leak.guard));
 
+// Regression: real replies from the first live run that an over-strict guard rejected wrongly.
+const e19 = decide('E19', { intent: 'return_refund', order_id: 'KC-1050', issue_type: 'change_of_mind', item_condition: 'unopened', requested_resolution: 'refund', items_affected: ['Kumkumadi oil', 'aloe gel'] });
+const okCod = guard(e19.nodes, { reply: 'Hi Farhan,\n\nYes, your return request for order KC-1050 is within our 7-day window since it was delivered 3 days ago, and can proceed as long as both items remain unopened with the seal intact. We will arrange a free reverse pickup for you within 2 to 3 business days. Once the pickup is completed, a team member will contact you to confirm the return process and ask for your UPI or bank details to process the refund of ₹1,648 (shipping and COD fees are not refunded). Please do not share any bank details at this stage. A team member will follow up shortly to confirm everything for you.' + SIGN, grounded: true });
+check('E19 COD reply ("do not share bank details now", UPI only after pickup) is NOT flagged', !okCod.guard.hard.length, JSON.stringify(okCod.guard));
+const earlyAsk = guard(e19.nodes, { reply: 'Hi Farhan,\n\nYour return is within the window. Please send your UPI id and bank details so we can process the refund of ₹1,648. A team member will confirm. Thank you.' + SIGN, grounded: true });
+check('asking for UPI before pickup IS still flagged', earlyAsk.guard.hard.includes('asks_payment_details_early'), JSON.stringify(earlyAsk.guard));
+const goodRefusal = guard(e07.nodes, { reply: 'Hi Arjun,\n\nFor privacy and security reasons, we can only discuss order details with the email address used to place the order. We cannot share or confirm any information regarding the status, tracking, or delivery address for this order. Please ask the account holder to write to us from that email address. Thank you for understanding.' + SIGN, grounded: true });
+check('E07 refusal that names "tracking / address" without leaking facts is NOT flagged', !goodRefusal.guard.hard.length, JSON.stringify(goodRefusal.guard));
+const hinglish = guard(a.nodes, { reply: 'Hi Priya, aapka order KC-1043 ship ho chuka hai aur iska estimated delivery date 23 November 2026 hai. Aap apna shipment yahan track kar sakte hain. Kyunki ye ek estimated date hai, ye thoda aage pichhe bhi ho sakta hai. Agar aapko koi aur madad chahiye toh batayiyega.' + SIGN, grounded: true });
+check('greeting on the same line as the text still counts sentences (no length_0)', !hinglish.guard.soft.some((x) => /^length_0/.test(x)), JSON.stringify(hinglish.guard));
+
 const notJson = guard(a.nodes, 'Hi Ananya,\n\nYour order is on its way. It ships with SwiftShip. We will update you. Thank you.');
 check('plain text (not JSON) is accepted but noted', notJson.guard.soft.includes('agent_output_not_json'));
 const empty = run(guardSrc, a.nodes, {}).json;
