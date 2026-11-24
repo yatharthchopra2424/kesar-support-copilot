@@ -1,0 +1,146 @@
+{
+  "name": "Kesar Support Copilot - read-only data API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "kesar-data-9d4f2a71c3",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "e4000000-0000-4000-8000-000000000001",
+      "name": "Data webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "f5000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Data webhook').first().json.query.v === 'v1' ? 'Audit Log v1' : 'Audit Log' }}",
+          "mode": "name"
+        },
+        "filtersUI": {},
+        "options": {}
+      },
+      "id": "e4000000-0000-4000-8000-000000000002",
+      "name": "Read Audit Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Data webhook').first().json.query.v === 'v1' ? 'Tickets v1' : 'Tickets' }}",
+          "mode": "name"
+        },
+        "filtersUI": {},
+        "options": {}
+      },
+      "id": "e4000000-0000-4000-8000-000000000003",
+      "name": "Read Tickets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Returns every row of both tabs as one JSON object. Empty rows are dropped.\nconst rows = (name, key) => $(name).all().map((i) => i.json).filter((r) => r && r[key]);\nreturn { json: {\n  version: $('Data webhook').first().json.query.v === 'v1' ? 'v1' : 'v2',\n  fetched_at: new Date().toISOString(),\n  audit: rows('Read Audit Log', 'email_id'),\n  tickets: rows('Read Tickets', 'ticket_id')\n} };"
+      },
+      "id": "e4000000-0000-4000-8000-000000000004",
+      "name": "Pack JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Data webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Audit Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Audit Log": {
+      "main": [
+        [
+          {
+            "node": "Read Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Tickets": {
+      "main": [
+        [
+          {
+            "node": "Pack JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
