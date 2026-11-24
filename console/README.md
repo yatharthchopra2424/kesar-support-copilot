@@ -41,3 +41,15 @@ npm run sync
 - Token numbers for the reply agent are estimates (characters / 4). Classification tokens are measured.
 - The Policy page re-applies three numeric rules to stored facts. It does not re-run the workflow.
 - `damage_report_window_hours` is in `config/policy.json` but the code uses a fixed 2 days, so the Policy page cannot change it yet.
+
+## Deploy
+
+Served from Cloudflare Workers static assets (free plan), no server code:
+
+```powershell
+cd console
+npm run build
+$env:CLOUDFLARE_ACCOUNT_ID = "<your account id>"; npx wrangler deploy
+```
+
+Live: https://kesar-ops-console.yc9891966.workers.dev

@@ -1,0 +1,8 @@
+{
+  // Static Ops Console served from Workers static assets (free plan, no server code).
+  "name": "kesar-ops-console",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
