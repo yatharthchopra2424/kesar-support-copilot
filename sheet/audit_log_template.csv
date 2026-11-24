@@ -1,0 +1,1 @@
+email_id,received_at,from_email,intent,secondary_intent,order_id,language,sentiment,confidence,order_found,action_taken,needs_human,ticket_id,reply_draft,prompt_version,processed_at,error,notes

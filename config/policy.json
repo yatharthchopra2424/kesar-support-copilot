@@ -1,0 +1,26 @@
+{
+  "_comment": "Single place for policy numbers. Values marked (faq) come from data/faq.md. Values marked (mine) are my own choices and are explained in the README.",
+  "scenario_today": "2026-11-20",
+  "return_window_days": 7,
+  "damage_report_window_hours": 48,
+  "free_shipping_min_inr": 999,
+  "shipping_fee_inr": 79,
+  "cod_limit_inr": 5000,
+  "cod_fee_inr": 49,
+  "confidence_threshold": 0.75,
+  "high_value_inr": 3000,
+  "delivery_days_after_dispatch": {
+    "metro": "2-4",
+    "rest_of_india": "4-6",
+    "north_east_and_remote": "6-8"
+  },
+  "dispatch_business_days": "1-2",
+  "follow_up_business_hours": 24,
+  "_sources": {
+    "return_window_days": "faq section 4",
+    "damage_report_window_hours": "faq section 5",
+    "shipping and COD values": "faq sections 1 and 2",
+    "confidence_threshold": "mine: starting value, tuned from v1 results",
+    "high_value_inr": "mine: refunds at or above this go to a human"
+  }
+}
