@@ -7,7 +7,9 @@
 // from prompts/classify_v1.md and config/policy.json. Edit those files, not the
 // workflow JSON.
 
-const MODEL = 'gemini-2.5-flash';       // change here if the model name changes
+// gemini-2.5-flash returned 404 "no longer available to new users" on 2026-11-24,
+// and the API pointed to gemini-3.8-flash. Change here if the name changes again.
+const MODEL = 'gemini-3.8-flash';
 const PROMPT_VERSION = 'v1';
 
 const email = $json.body || {};

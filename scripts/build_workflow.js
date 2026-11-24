@@ -11,8 +11,9 @@
  * Usage: node scripts/build_workflow.js
  * Output: workflow/kesar-copilot-phase1.json  (contains NO secrets, only a credential id)
  *
- * Credentials are referenced by id and name only. The Gemini credential is not
- * set here: after importing, open the "Gemini classify" node and pick yours.
+ * Credentials are referenced by id and name only (never the secret itself).
+ * On a different n8n instance the ids will not match: after importing, open the
+ * "Gemini classify" and "Write Audit Log row" nodes and pick your own credentials.
  */
 
 const fs = require('fs');
@@ -23,6 +24,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const SHEET_ID = '1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8';
 const SHEETS_CRED = { id: 'lHRcWR7m06r1xfQg', name: 'Google Sheets account' };
+const GEMINI_CRED = { id: 'FDRhs4FC81VjM9Q9', name: 'Google Gemini(PaLM) Api account' };
 
 const systemPrompt = read('prompts/classify_v1.md').trim();
 const policy = JSON.parse(read('config/policy.json'));
@@ -84,6 +86,7 @@ const nodes = [
     type: 'n8n-nodes-base.httpRequest',
     typeVersion: 4.2,
     position: [480, 0],
+    credentials: { googlePalmApi: GEMINI_CRED },
     retryOnFail: true,
     maxTries: 3,
     waitBetweenTries: 3000,
