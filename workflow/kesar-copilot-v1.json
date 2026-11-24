@@ -1,0 +1,921 @@
+{
+  "name": "Kesar Support Copilot - v1 baseline (plain prompt, no guards)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kesar-support-email-v1",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "a6000000-0000-4000-8000-000000000001",
+      "name": "Email webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "b7000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const SYSTEM_PROMPT = \"You are a support triage assistant for Kesar & Co., an Indian D2C Ayurvedic skincare brand that sells on Shopify.\\n\\nRead the customer email and return a JSON object with these fields:\\n\\n- intent: the customer's main need. One of:\\n  - order_status: asking where an order is, or when it will arrive\\n  - product_query: questions about products, ingredients, shipping, COD or other policies\\n  - return_refund: wants to return something, get a refund or replacement, or reports a damaged, wrong or missing item\\n  - complaint: unhappy with the service or experience, or angry\\n  - other: spam, partnership or press enquiries, invoices, thank-you notes, anything else\\n- secondary_intent: a second need in the same email, using the same list, or null\\n- order_id: the order number exactly as KC-#### if the email mentions one, otherwise null. Do not guess.\\n- sentiment: positive, neutral, negative or angry\\n- language: en (English), hi (Hindi in Devanagari) or hinglish (Hindi written in Latin letters mixed with English)\\n- confidence: a number from 0 to 1 for how sure you are about the intent\\n- summary: one line for the support team, in English, under 200 characters\\n\\nReturn only the JSON object.\";\nconst POLICY = {\"scenario_today\":\"2026-11-20\",\"return_window_days\":7,\"damage_report_window_hours\":48,\"free_shipping_min_inr\":999,\"shipping_fee_inr\":79,\"cod_limit_inr\":5000,\"cod_fee_inr\":49,\"confidence_threshold\":0.75,\"high_value_inr\":3000,\"delivery_days_after_dispatch\":{\"metro\":\"2-4\",\"rest_of_india\":\"4-6\",\"north_east_and_remote\":\"6-8\"},\"dispatch_business_days\":\"1-2\",\"follow_up_business_hours\":24};\n\n// Node: \"Prepare email\"  (n8n Code node, run once for each item)\n//\n// Takes the webhook payload (one email, exactly as in data/test_emails.json)\n// and builds the request we send to Gemini.\n//\n// SYSTEM_PROMPT and POLICY are added above this code by scripts/build_workflow.js,\n// from prompts/classify_v1.md and config/policy.json. Edit those files, not the\n// workflow JSON.\n\n// Model history on 2026-11-24 (see docs/BUILD_LOG.md):\n//   gemini-2.5-flash      -> 404, no longer available to new users\n//   gemini-3.8-flash      -> 503, high demand on the free tier\n//   gemini-flash-latest   -> 503, same\n//   gemini-flash-lite-latest -> works (resolved to gemini-3.5-flash-lite)\n// \"-latest\" aliases avoid 404s when Google renames models, but they can change\n// under us. The exact model used is stored in every Audit Log row (\"model\").\nconst MODEL = 'gemini-flash-lite-latest';\nconst PROMPT_VERSION = 'v1';\n\nconst email = $json.body || {};\n\n// Basic shape check. A broken payload should be logged, not crash the flow.\nconst missing = [];\nif (!email.id) missing.push('id');\nif (!email.from || !email.from.email) missing.push('from.email');\nif (!email.body) missing.push('body');\n\n// The model only sees the text of the email.\nconst userText =\n  'From: ' + (email.from && email.from.name || '') + ' <' + (email.from && email.from.email || '') + '>\\n' +\n  'Subject: ' + (email.subject || '') + '\\n' +\n  'Attachments: ' + ((email.attachments || []).join(', ') || 'none') + '\\n\\n' +\n  (email.body || '');\n\n// Smaller schema for Gemini. Gemini does not accept \"pattern\", \"maxLength\" or\n// type arrays, so those rules are checked in the next node instead.\nconst intents = ['order_status', 'product_query', 'return_refund', 'complaint', 'other'];\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    intent: { type: 'STRING', enum: intents },\n    secondary_intent: { type: 'STRING', enum: intents, nullable: true },\n    order_id: { type: 'STRING', nullable: true },\n    sentiment: { type: 'STRING', enum: ['positive', 'neutral', 'negative', 'angry'] },\n    language: { type: 'STRING', enum: ['en', 'hi', 'hinglish'] },\n    confidence: { type: 'NUMBER' },\n    summary: { type: 'STRING' }\n  },\n  required: ['intent', 'secondary_intent', 'order_id', 'sentiment', 'language', 'confidence', 'summary']\n};\n\nreturn {\n  json: {\n    email,\n    missing_fields: missing,\n    model: MODEL,\n    prompt_version: PROMPT_VERSION,\n    started_at: Date.now(),\n    gemini_request: {\n      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },\n      contents: [{ role: 'user', parts: [{ text: userText }] }],\n      generationConfig: {\n        temperature: 0,\n        responseMimeType: 'application/json',\n        responseSchema\n      }\n    }\n  }\n};\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000002",
+      "name": "Prepare email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.gemini_request) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "a6000000-0000-4000-8000-000000000003",
+      "name": "Gemini classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FDRhs4FC81VjM9Q9",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const POLICY = {\"scenario_today\":\"2026-11-20\",\"return_window_days\":7,\"damage_report_window_hours\":48,\"free_shipping_min_inr\":999,\"shipping_fee_inr\":79,\"cod_limit_inr\":5000,\"cod_fee_inr\":49,\"confidence_threshold\":0.75,\"high_value_inr\":3000,\"delivery_days_after_dispatch\":{\"metro\":\"2-4\",\"rest_of_india\":\"4-6\",\"north_east_and_remote\":\"6-8\"},\"dispatch_business_days\":\"1-2\",\"follow_up_business_hours\":24};\n\n// Node: \"Validate classification\"  (n8n Code node, run once for each item)\n//\n// Checks the model's answer against schemas/llm_output.schema.json and builds\n// the Audit Log row. It never throws: if anything is wrong the email falls back\n// to intent \"other\" with needs_human = TRUE, and the reason goes in \"error\".\n//\n// POLICY is added above this code by scripts/build_workflow.js (config/policy.json).\n\nconst INTENTS = ['order_status', 'product_query', 'return_refund', 'complaint', 'other'];\nconst SENTIMENTS = ['positive', 'neutral', 'negative', 'angry'];\nconst LANGUAGES = ['en', 'hi', 'hinglish'];\n\nconst prep = $('Prepare email').item.json;\nconst email = prep.email || {};\nconst resp = $input.item.json;\nconst usage = resp.usageMetadata || {};\n\n// Returns a list of problems. An empty list means the output is valid.\nfunction check(o) {\n  const p = [];\n  if (typeof o !== 'object' || o === null || Array.isArray(o)) return ['not a JSON object'];\n  for (const k of ['intent', 'secondary_intent', 'order_id', 'sentiment', 'language', 'confidence', 'summary']) {\n    if (!(k in o)) p.push('missing ' + k);\n  }\n  if (!INTENTS.includes(o.intent)) p.push('bad intent');\n  if (o.secondary_intent !== null && !INTENTS.includes(o.secondary_intent)) p.push('bad secondary_intent');\n  if (o.order_id !== null && !/^KC-[0-9]{4}$/.test(String(o.order_id))) p.push('bad order_id');\n  if (!SENTIMENTS.includes(o.sentiment)) p.push('bad sentiment');\n  if (!LANGUAGES.includes(o.language)) p.push('bad language');\n  if (typeof o.confidence !== 'number' || o.confidence < 0 || o.confidence > 1) p.push('bad confidence');\n  if (typeof o.summary !== 'string') p.push('bad summary');\n  else if (o.summary.length > 200) p.push('summary over 200 chars');\n  return p;\n}\n\nlet result = null;\nlet error = '';\nlet validFirstTry = false;\n\ntry {\n  if (prep.missing_fields && prep.missing_fields.length) {\n    throw new Error('payload missing: ' + prep.missing_fields.join(', '));\n  }\n  if (resp.error) {\n    throw new Error('LLM call failed: ' + String(resp.error.message || JSON.stringify(resp.error)).slice(0, 200));\n  }\n  const text = resp.candidates && resp.candidates[0] && resp.candidates[0].content &&\n    resp.candidates[0].content.parts && resp.candidates[0].content.parts[0].text;\n  if (!text) throw new Error('empty model response');\n\n  const parsed = JSON.parse(text);\n  const problems = check(parsed);\n  validFirstTry = problems.length === 0;\n\n  // One cheap repair we can do safely: cut a too-long summary.\n  if (problems.length === 1 && problems[0] === 'summary over 200 chars') {\n    parsed.summary = parsed.summary.slice(0, 197) + '...';\n    error = 'repaired: summary shortened';\n  } else if (problems.length) {\n    throw new Error('invalid output: ' + problems.join('; '));\n  }\n  result = parsed;\n} catch (e) {\n  error = String(e.message || e).slice(0, 300);\n}\n\nconst fallback = result === null;\nif (fallback) {\n  result = {\n    intent: 'other', secondary_intent: null, order_id: null, sentiment: 'neutral',\n    language: 'en', confidence: 0, summary: 'Classification failed, needs manual review.'\n  };\n}\n\nconst needsHuman = fallback || result.confidence < POLICY.confidence_threshold;\nconst latency = Date.now() - (prep.started_at || Date.now());\n\nconst row = {\n  email_id: email.id || '',\n  received_at: email.received_at || '',\n  from_email: (email.from && email.from.email) || '',\n  intent: result.intent,\n  secondary_intent: result.secondary_intent === null ? '' : result.secondary_intent,\n  order_id: result.order_id === null ? '' : result.order_id,\n  language: result.language,\n  sentiment: result.sentiment,\n  confidence: result.confidence,\n  order_found: '',\n  action_taken: fallback ? 'fallback_needs_human' : 'classified_only',\n  needs_human: needsHuman ? 'TRUE' : 'FALSE',\n  ticket_id: '',\n  reply_draft: '',\n  prompt_version: prep.prompt_version,\n  processed_at: new Date().toISOString(),\n  error: error,\n  notes: result.summary,\n  model: prep.model,\n  tokens_in: usage.promptTokenCount || '',\n  tokens_out: usage.candidatesTokenCount || '',\n  cost_usd: '',\n  latency_ms: latency,\n  guard_flags: '',\n  facts_json: '',\n  trace_json: JSON.stringify({\n    steps: [{ name: 'classify', model: prep.model, ms: latency, valid_first_try: validFirstTry,\n              tokens_in: usage.promptTokenCount || 0, tokens_out: usage.candidatesTokenCount || 0 }]\n  })\n};\n\nreturn { json: { row } };\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000004",
+      "name": "Validate classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Node: \"Build agent input\"  (n8n Code node, run once for each item)  [v1]\n//\n// v1 hands the agent the raw email plus the classification. Nothing else:\n// no decision, no facts, no rules. The agent works it all out itself.\n\nconst email = $('Prepare email').first().json.email || {};\nconst row = $input.item.json.row;\n\nconst text = [\n  'From: ' + ((email.from && email.from.name) || '') + ' <' + ((email.from && email.from.email) || '') + '>',\n  'Subject: ' + (email.subject || ''),\n  'Attachments: ' + ((email.attachments || []).join(', ') || 'none'),\n  '',\n  email.body || '',\n  '',\n  '(Automatic classification: intent ' + row.intent + ', order ' + (row.order_id || 'none') + ', sentiment ' + row.sentiment + ', language ' + row.language + ')'\n].join('\\n');\n\nreturn { json: { agent_input: text } };\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000005",
+      "name": "Build agent input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.agent_input }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "You are a customer support assistant for Kesar & Co., an Indian skincare brand. Write a friendly, helpful reply to the customer's email.\n\nYou have two tools:\n- get_order: look up an order by order number (like KC-1041) or by the customer's email address.\n- search_faq: look up company policies and product information.\n\nUse the tools when you need facts. Keep the reply short and sign off as Team Kesar. If the email is spam or is not a customer request, reply with exactly NO_REPLY.",
+          "maxIterations": 5,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "a6000000-0000-4000-8000-000000000006",
+      "name": "Reply agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1100,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-flash-lite-latest",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "a6000000-0000-4000-8000-000000000007",
+      "name": "Gemini model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        440
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FDRhs4FC81VjM9Q9",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "get_order",
+        "description": "Look up an order. Input: an order number like KC-1041, or the customer email address.",
+        "language": "javaScript",
+        "jsCode": "const ORDERS = {\"_meta\":{\"description\":\"Mock order database for Kesar & Co. Treat this as the response of the store's order API. All people, addresses and tracking links are fictional.\",\"currency\":\"INR\",\"scenario_today\":\"2026-11-20\",\"record_count\":15},\"orders\":[{\"order_id\":\"KC-1041\",\"customer_name\":\"Ananya Rao\",\"customer_email\":\"ananya.rao@example.com\",\"order_date\":\"2026-11-15\",\"items\":[{\"sku\":\"KC-SER-30\",\"name\":\"Saffron Glow Face Serum 30 ml\",\"qty\":1,\"unit_price\":1299}],\"subtotal\":1299,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1299,\"payment_method\":\"prepaid\",\"status\":\"shipped\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781041\",\"shipped_date\":\"2026-11-17\",\"estimated_delivery\":\"2026-11-21\",\"delivered_date\":null,\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"12 Koregaon Park Lane\",\"city\":\"Pune\",\"state\":\"Maharashtra\",\"pincode\":\"411001\"}},{\"order_id\":\"KC-1042\",\"customer_name\":\"Rohit Mehta\",\"customer_email\":\"rohit.mehta@example.com\",\"order_date\":\"2026-11-14\",\"items\":[{\"sku\":\"KC-KUM-15\",\"name\":\"Kumkumadi Night Oil 15 ml\",\"qty\":1,\"unit_price\":1149},{\"sku\":\"KC-UBT-100\",\"name\":\"Ubtan Face Pack 100 g\",\"qty\":1,\"unit_price\":699}],\"subtotal\":1848,\"shipping_fee\":0,\"cod_fee\":49,\"total\":1897,\"payment_method\":\"cod\",\"status\":\"out_for_delivery\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521042\",\"shipped_date\":\"2026-11-16\",\"estimated_delivery\":\"2026-11-20\",\"delivered_date\":null,\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"88 Civil Lines\",\"city\":\"Jaipur\",\"state\":\"Rajasthan\",\"pincode\":\"302006\"}},{\"order_id\":\"KC-1043\",\"customer_name\":\"Priya Sharma\",\"customer_email\":\"priya.sharma@example.com\",\"order_date\":\"2026-11-16\",\"items\":[{\"sku\":\"KC-ALO-150\",\"name\":\"Aloe Calm Gel 150 g\",\"qty\":1,\"unit_price\":499}],\"subtotal\":499,\"shipping_fee\":79,\"cod_fee\":0,\"total\":578,\"payment_method\":\"prepaid\",\"status\":\"shipped\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781043\",\"shipped_date\":\"2026-11-18\",\"estimated_delivery\":\"2026-11-23\",\"delivered_date\":null,\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"5 Hazratganj Road\",\"city\":\"Lucknow\",\"state\":\"Uttar Pradesh\",\"pincode\":\"226001\"}},{\"order_id\":\"KC-1044\",\"customer_name\":\"Vikram Singh\",\"customer_email\":\"vikram.singh@example.com\",\"order_date\":\"2026-11-16\",\"items\":[{\"sku\":\"KC-BHR-200\",\"name\":\"Bhringraj Hair Oil 200 ml\",\"qty\":2,\"unit_price\":649}],\"subtotal\":1298,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1298,\"payment_method\":\"prepaid\",\"status\":\"shipped\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521044\",\"shipped_date\":\"2026-11-18\",\"estimated_delivery\":\"2026-11-25\",\"delivered_date\":null,\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"21 GS Road\",\"city\":\"Guwahati\",\"state\":\"Assam\",\"pincode\":\"781005\"}},{\"order_id\":\"KC-1045\",\"customer_name\":\"Deepak Rao\",\"customer_email\":\"deepak.rao@example.com\",\"order_date\":\"2026-11-15\",\"items\":[{\"sku\":\"KC-SAN-250\",\"name\":\"Sandalwood Body Lotion 250 ml\",\"qty\":1,\"unit_price\":749}],\"subtotal\":749,\"shipping_fee\":79,\"cod_fee\":0,\"total\":828,\"payment_method\":\"prepaid\",\"status\":\"cancelled\",\"courier\":null,\"tracking_url\":null,\"shipped_date\":null,\"estimated_delivery\":null,\"delivered_date\":null,\"cancelled_date\":\"2026-11-16\",\"cancellation_reason\":\"Out of stock at warehouse\",\"refund_status\":\"Refund of INR 828 initiated to original payment method on 2026-11-16\",\"shipping_address\":{\"line1\":\"3 Residency Road\",\"city\":\"Bengaluru\",\"state\":\"Karnataka\",\"pincode\":\"560025\"}},{\"order_id\":\"KC-1046\",\"customer_name\":\"Meera Iyer\",\"customer_email\":\"meera.iyer@example.com\",\"order_date\":\"2026-11-17\",\"items\":[{\"sku\":\"KC-KIT-BRD\",\"name\":\"Bridal Glow Kit\",\"qty\":1,\"unit_price\":3499}],\"subtotal\":3499,\"shipping_fee\":0,\"cod_fee\":0,\"total\":3499,\"payment_method\":\"prepaid\",\"status\":\"shipped\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781046\",\"shipped_date\":\"2026-11-19\",\"estimated_delivery\":\"2026-11-22\",\"delivered_date\":null,\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"Flat 4B, Lotus Residency, Adyar\",\"city\":\"Chennai\",\"state\":\"Tamil Nadu\",\"pincode\":\"600020\"}},{\"order_id\":\"KC-1047\",\"customer_name\":\"Kavya Reddy\",\"customer_email\":\"kavya.reddy@example.com\",\"order_date\":\"2026-11-12\",\"items\":[{\"sku\":\"KC-ROS-200\",\"name\":\"Rose Water Toner 200 ml\",\"qty\":1,\"unit_price\":899}],\"subtotal\":899,\"shipping_fee\":79,\"cod_fee\":0,\"total\":978,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781047\",\"shipped_date\":\"2026-11-13\",\"estimated_delivery\":\"2026-11-16\",\"delivered_date\":\"2026-11-16\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"9 Jubilee Hills Road No. 36\",\"city\":\"Hyderabad\",\"state\":\"Telangana\",\"pincode\":\"500033\"}},{\"order_id\":\"KC-1048\",\"customer_name\":\"Sneha Joshi\",\"customer_email\":\"sneha.joshi@example.com\",\"order_date\":\"2026-11-11\",\"items\":[{\"sku\":\"KC-KIT-BRD\",\"name\":\"Bridal Glow Kit\",\"qty\":1,\"unit_price\":3499}],\"subtotal\":3499,\"shipping_fee\":0,\"cod_fee\":0,\"total\":3499,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521048\",\"shipped_date\":\"2026-11-12\",\"estimated_delivery\":\"2026-11-15\",\"delivered_date\":\"2026-11-15\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"44 Bandra West, Hill Road\",\"city\":\"Mumbai\",\"state\":\"Maharashtra\",\"pincode\":\"400050\"}},{\"order_id\":\"KC-1049\",\"customer_name\":\"Aditya Verma\",\"customer_email\":\"aditya.verma@example.com\",\"order_date\":\"2026-11-01\",\"items\":[{\"sku\":\"KC-SER-30\",\"name\":\"Saffron Glow Face Serum 30 ml\",\"qty\":1,\"unit_price\":1299}],\"subtotal\":1299,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1299,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781049\",\"shipped_date\":\"2026-11-02\",\"estimated_delivery\":\"2026-11-05\",\"delivered_date\":\"2026-11-05\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"17 Sector 15\",\"city\":\"Noida\",\"state\":\"Uttar Pradesh\",\"pincode\":\"201301\"}},{\"order_id\":\"KC-1050\",\"customer_name\":\"Farhan Sheikh\",\"customer_email\":\"farhan.sheikh@example.com\",\"order_date\":\"2026-11-13\",\"items\":[{\"sku\":\"KC-KUM-15\",\"name\":\"Kumkumadi Night Oil 15 ml\",\"qty\":1,\"unit_price\":1149},{\"sku\":\"KC-ALO-150\",\"name\":\"Aloe Calm Gel 150 g\",\"qty\":1,\"unit_price\":499}],\"subtotal\":1648,\"shipping_fee\":0,\"cod_fee\":49,\"total\":1697,\"payment_method\":\"cod\",\"status\":\"delivered\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521050\",\"shipped_date\":\"2026-11-14\",\"estimated_delivery\":\"2026-11-17\",\"delivered_date\":\"2026-11-17\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"62 Park Street\",\"city\":\"Kolkata\",\"state\":\"West Bengal\",\"pincode\":\"700016\"}},{\"order_id\":\"KC-1051\",\"customer_name\":\"Riya Kapoor\",\"customer_email\":\"riya.kapoor@example.com\",\"order_date\":\"2026-11-15\",\"items\":[{\"sku\":\"KC-SAN-250\",\"name\":\"Sandalwood Body Lotion 250 ml\",\"qty\":2,\"unit_price\":749}],\"subtotal\":1498,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1498,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781051\",\"shipped_date\":\"2026-11-16\",\"estimated_delivery\":\"2026-11-19\",\"delivered_date\":\"2026-11-19\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"7 Rajouri Garden Main Market\",\"city\":\"New Delhi\",\"state\":\"Delhi\",\"pincode\":\"110027\"}},{\"order_id\":\"KC-1052\",\"customer_name\":\"Tanvi Desai\",\"customer_email\":\"tanvi.desai@example.com\",\"order_date\":\"2026-11-15\",\"items\":[{\"sku\":\"KC-UBT-100\",\"name\":\"Ubtan Face Pack 100 g\",\"qty\":1,\"unit_price\":699},{\"sku\":\"KC-ROS-200\",\"name\":\"Rose Water Toner 200 ml\",\"qty\":1,\"unit_price\":899}],\"subtotal\":1598,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1598,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521052\",\"shipped_date\":\"2026-11-16\",\"estimated_delivery\":\"2026-11-19\",\"delivered_date\":\"2026-11-19\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"19 Andheri East, Chakala\",\"city\":\"Mumbai\",\"state\":\"Maharashtra\",\"pincode\":\"400093\"}},{\"order_id\":\"KC-1053\",\"customer_name\":\"Karan Malhotra\",\"customer_email\":\"karan.malhotra@example.com\",\"order_date\":\"2026-11-15\",\"items\":[{\"sku\":\"KC-UBT-100\",\"name\":\"Ubtan Face Pack 100 g\",\"qty\":2,\"unit_price\":699}],\"subtotal\":1398,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1398,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781053\",\"shipped_date\":\"2026-11-16\",\"estimated_delivery\":\"2026-11-19\",\"delivered_date\":\"2026-11-19\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"31 Model Town\",\"city\":\"Ludhiana\",\"state\":\"Punjab\",\"pincode\":\"141002\"}},{\"order_id\":\"KC-1054\",\"customer_name\":\"Pooja Nair\",\"customer_email\":\"pooja.nair@example.com\",\"order_date\":\"2026-11-14\",\"items\":[{\"sku\":\"KC-SER-30\",\"name\":\"Saffron Glow Face Serum 30 ml\",\"qty\":1,\"unit_price\":1299},{\"sku\":\"KC-ALO-150\",\"name\":\"Aloe Calm Gel 150 g\",\"qty\":1,\"unit_price\":499}],\"subtotal\":1798,\"shipping_fee\":0,\"cod_fee\":0,\"total\":1798,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"BharatExpress\",\"tracking_url\":\"https://track.example.com/BX5521054\",\"shipped_date\":\"2026-11-16\",\"estimated_delivery\":\"2026-11-19\",\"delivered_date\":\"2026-11-19\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"11 Panampilly Nagar\",\"city\":\"Kochi\",\"state\":\"Kerala\",\"pincode\":\"682036\"}},{\"order_id\":\"KC-1055\",\"customer_name\":\"Manish Gupta\",\"customer_email\":\"manish.gupta@example.com\",\"order_date\":\"2026-11-08\",\"items\":[{\"sku\":\"KC-SER-30\",\"name\":\"Saffron Glow Face Serum 30 ml\",\"qty\":1,\"unit_price\":1299},{\"sku\":\"KC-KUM-15\",\"name\":\"Kumkumadi Night Oil 15 ml\",\"qty\":1,\"unit_price\":1149}],\"subtotal\":2448,\"shipping_fee\":0,\"cod_fee\":0,\"total\":2448,\"payment_method\":\"prepaid\",\"status\":\"delivered\",\"courier\":\"SwiftShip\",\"tracking_url\":\"https://track.example.com/SS7781055\",\"shipped_date\":\"2026-11-09\",\"estimated_delivery\":\"2026-11-12\",\"delivered_date\":\"2026-11-12\",\"cancelled_date\":null,\"cancellation_reason\":null,\"refund_status\":null,\"shipping_address\":{\"line1\":\"26 Vijay Nagar\",\"city\":\"Indore\",\"state\":\"Madhya Pradesh\",\"pincode\":\"452010\"}}]};\n\n// Agent tool: get_order  (n8n \"Code Tool\" node)  [v1]\n//\n// ORDERS is added above this code by scripts/build_workflow_v1.js (data/orders.json).\n// Plain lookup: by order number if the input has one, otherwise by customer email.\n// v1 simply trusts whatever the agent passes in. There is NO check that the person\n// writing the email owns the order. That is a known weakness of v1 and is what v2's\n// code-side gate fixes.\n\nconst text = String(query || '');\nconst id = text.toUpperCase().match(/KC-\\d{4}/);\nconst mail = text.toLowerCase().match(/[a-z0-9._+-]+@[a-z0-9.-]+/);\n\nlet found = null;\nif (id) found = ORDERS.orders.find((o) => o.order_id === id[0]);\nelse if (mail) found = ORDERS.orders.find((o) => o.customer_email.toLowerCase() === mail[0]);\n\nreturn found ? JSON.stringify(found) : JSON.stringify({ error: 'order not found' });\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000008",
+      "name": "get_order",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        1180,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "search_faq",
+        "description": "Company FAQ: shipping, returns, refunds, COD, cancellation, products and safety. Input: your question.",
+        "language": "javaScript",
+        "jsCode": "const FAQ_TEXT = \"# Kesar & Co. — Customer Support FAQ & Policies\\n\\n> This is the **only** source of truth for policy and product answers. If a question is not answered here, the copilot must not guess. Send it to a human.\\n\\nKesar & Co. is a D2C Ayurvedic skincare brand. We sell only on our own Shopify store (kesarandco.example) and ship **within India only**.\\n\\n---\\n\\n## 1. Shipping\\n\\n- Orders are dispatched within **1–2 business days** (Mon–Sat, excluding public holidays).\\n- Delivery times after dispatch:\\n  - Metro cities (Delhi NCR, Mumbai, Bengaluru, Chennai, Kolkata, Hyderabad, Pune): **2–4 business days**\\n  - Rest of India: **4–6 business days**\\n  - North-East states, Jammu & Kashmir, Ladakh, Andaman & Nicobar, Lakshadweep: **6–8 business days**\\n- Shipping is **free on orders of ₹999 and above**. Below ₹999, a flat **₹79** shipping fee applies.\\n- We ship with our courier partners SwiftShip and BharatExpress. A tracking link is emailed when the order is dispatched.\\n- We do **not** ship outside India.\\n- We cannot change the delivery address once an order has been dispatched.\\n\\n## 2. Cash on Delivery (COD)\\n\\n- COD is available on orders up to **₹5,000**.\\n- A **₹49** COD handling fee applies. It is not refundable.\\n- Please keep exact change ready; delivery partners may not carry change.\\n\\n## 3. Order Cancellation\\n\\n- Orders can be cancelled **only before dispatch**. Once dispatched, the customer must wait for delivery and raise a return instead.\\n- If we cancel an order (for example, an item is out of stock), prepaid orders are refunded automatically to the original payment method within **5–7 business days**.\\n\\n## 4. Returns\\n\\n- Returns are accepted within **7 days of delivery**.\\n- Returned items must be **unused, unopened and with the seal intact**. For hygiene reasons, we cannot accept opened or used products, including \\\"didn't suit me\\\" or \\\"didn't see results\\\" cases.\\n- To start a return, the customer replies with the order ID. We arrange a free reverse pickup within 2–3 business days.\\n- Combo or kit products (e.g., Bridal Glow Kit) must be returned as a complete set.\\n\\n## 5. Damaged, Leaking, Wrong or Missing Items\\n\\n- Report within **48 hours of delivery**, with **photos** of the product and the outer box.\\n- After verification, we offer a **free replacement or a full refund** (customer's choice). The 7-day / unopened rule does **not** apply to these cases.\\n- Wrong item delivered: we pick up the wrong item and send the correct one at no cost.\\n- Missing item: we verify against the packing weight record and ship the missing item or refund its value.\\n\\n## 6. Refunds\\n\\n- **Prepaid orders:** refunded to the original payment method within **5–7 business days** after the returned item passes quality check.\\n- **COD orders:** refunded via **UPI or bank transfer**. We will ask the customer to share a UPI ID (or account holder name, account number and IFSC) **after** the pickup is completed.\\n- Shipping fees and COD fees are non-refundable, except for damaged, wrong or missing item cases where the full amount paid is refunded.\\n- We will **never** ask for an OTP, card PIN, CVV or password. Customers should not share these with anyone.\\n\\n## 7. Products\\n\\nAll products are **cruelty-free**, **paraben-free**, made in India, and have a shelf life of **24 months** from manufacture (12 months after opening).\\n\\n| Product | Price | Key facts |\\n|---|---|---|\\n| Saffron Glow Face Serum 30 ml | ₹1,299 | Saffron + Vitamin C. Lightweight, non-greasy, suitable for **all skin types including oily**. **Vegan.** Use AM/PM after cleansing. |\\n| Kumkumadi Night Oil 15 ml | ₹1,149 | Traditional kumkumadi tailam blend. Best for **normal to dry** skin. **Not recommended for very oily or acne-prone skin.** Night use only. Vegan. |\\n| Ubtan Face Pack 100 g | ₹699 | Turmeric, chickpea flour, sandalwood. Mix with water or rose water. Use 2× a week. Vegan. |\\n| Rose Water Toner 200 ml | ₹899 | Steam-distilled rose water, alcohol-free. Suitable for all skin types. Vegan. |\\n| Bhringraj Hair Oil 200 ml | ₹649 | Bhringraj, amla, coconut oil base. Apply 1 hour before washing. Vegan. |\\n| Sandalwood Body Lotion 250 ml | ₹749 | Sandalwood + shea butter. Contains **beeswax**, so **not vegan**. |\\n| Aloe Calm Gel 150 g | ₹499 | 92% aloe vera. Soothing, suitable for all skin types. Vegan. |\\n| Bridal Glow Kit | ₹3,499 | Contains Saffron Glow Serum, Kumkumadi Night Oil, Ubtan Face Pack and Rose Water Toner. Start 4–6 weeks before the event. |\\n\\n## 8. Product Safety & Medical Questions\\n\\n- Our products are **cosmetics, not medicines**. They are not intended to diagnose, treat or cure any skin or medical condition.\\n- We always recommend a **patch test** (inner forearm, 24 hours) before first use.\\n- For any skin condition (e.g., eczema, psoriasis, severe acne), pregnancy or allergies, customers should **consult a dermatologist or doctor** before use.\\n- Support must **not** give medical advice or make claims about curing or treating conditions.\\n- If a customer reports a reaction, advise them to stop using the product immediately and consult a doctor, and escalate to a human.\\n\\n## 9. Contact & Hours\\n\\n- Email: support@kesarandco.example\\n- Support hours: **Mon–Sat, 10:00–19:00 IST**. We aim to reply within **24 business hours**.\\n- Business and partnership enquiries (influencers, wholesale, press): partnerships@kesarandco.example\\n\";\n\n// Agent tool: search_faq  (n8n \"Code Tool\" node)  [v1]\n//\n// FAQ_TEXT is added above this code by scripts/build_workflow_v1.js (data/faq.md).\n// v1 does no searching: it returns the whole FAQ and lets the model find the answer.\n\nreturn FAQ_TEXT;\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000009",
+      "name": "search_faq",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        1320,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const AGENT_PROMPT_CHARS = 483;\nconst POLICY = {\"scenario_today\":\"2026-11-20\",\"return_window_days\":7,\"damage_report_window_hours\":48,\"free_shipping_min_inr\":999,\"shipping_fee_inr\":79,\"cod_limit_inr\":5000,\"cod_fee_inr\":49,\"confidence_threshold\":0.75,\"high_value_inr\":3000,\"delivery_days_after_dispatch\":{\"metro\":\"2-4\",\"rest_of_india\":\"4-6\",\"north_east_and_remote\":\"6-8\"},\"dispatch_business_days\":\"1-2\",\"follow_up_business_hours\":24};\n\n// Node: \"Decide\"  (n8n Code node, run once for each item)  [v1]\n//\n// Reads the agent's answer and applies the few v1 rules:\n//   reply        : the agent's text, or nothing when it said NO_REPLY\n//   ticket       : return_refund or complaint WITH an order number found by the classifier\n//   needs_human  : the classifier failed, or its confidence is below the threshold\n// There is no eligibility check, no output guard and no privacy check in v1.\n//\n// POLICY is added above this code by scripts/build_workflow_v1.js.\n// AGENT_PROMPT_CHARS is added the same way.\n\nconst row = $('Validate classification').first().json.row;\nconst out = $input.item.json;\nconst steps = Array.isArray(out.intermediateSteps) ? out.intermediateSteps : [];\n\nlet reply = String(out.output === undefined ? '' : out.output).replace(/^```\\w*\\s*/, '').replace(/\\s*```\\s*$/, '').trim();\nconst agentFailed = out.output === undefined;\nif (/^NO_REPLY\\b/i.test(reply)) reply = '';\n\nconst fallback = row.action_taken === 'fallback_needs_human';\nconst confidence = Number(row.confidence);\nconst lowConf = !fallback && confidence < POLICY.confidence_threshold;\nconst reasons = [];\nif (fallback) reasons.push('classification_failed');\nif (lowConf) reasons.push('low_confidence');\nif (agentFailed) reasons.push('agent_failed');\n\nconst getOrderCalls = steps.filter((s) => s.action && String(s.action.tool).indexOf('get_order') === 0);\nconst orderFound = getOrderCalls.some((s) => String(s.observation || '').indexOf('\"order_id\"') !== -1);\n\nconst ticketNeeded = !fallback && ['return_refund', 'complaint'].indexOf(row.intent) !== -1 && !!row.order_id;\n\nconst toolChars = steps.reduce((n, s) => n + String(s.observation || '').length, 0);\nconst agentIn = Math.ceil((AGENT_PROMPT_CHARS + String($('Build agent input').first().json.agent_input).length + toolChars) / 4);\nconst agentOut = Math.ceil(String(out.output || '').length / 4);\n\nreturn {\n  json: {\n    row, reply, ticket_needed: ticketNeeded, needs_human: reasons.length > 0, reasons,\n    action: fallback ? 'fallback_needs_human' : (agentFailed ? 'agent_failed' : (reply ? 'reply_drafted' : 'no_reply')),\n    order_found: getOrderCalls.length ? orderFound : null,\n    tools_used: steps.map((s) => (s.action && s.action.tool) || 'unknown'),\n    tokens_agent_in_est: agentIn, tokens_agent_out_est: agentOut\n  }\n};\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000010",
+      "name": "Decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6000000-0000-4000-8000-000000000011-c",
+              "leftValue": "={{ $json.ticket_needed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a6000000-0000-4000-8000-000000000011",
+      "name": "Ticket needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1640,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Tickets v1",
+          "mode": "name"
+        },
+        "filtersUI": {},
+        "options": {}
+      },
+      "id": "a6000000-0000-4000-8000-000000000012",
+      "name": "Get tickets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1860,
+        100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Node: \"Plan ticket\"  (n8n Code node, run once for ALL items)  [v1]\n//\n// One open ticket per order: update it if there is one, otherwise create a new one.\n// Same idea as v2, with simpler rules: priority is High for an angry customer, else Medium,\n// and an update never changes the priority.\n//\n// Input : every row of the \"Tickets v1\" tab\n// Output: one ticket row for \"Write ticket\" to upsert on ticket_id\n\nconst d = $('Decide').first().json;\nconst row = d.row;\nconst email = $('Prepare email').first().json.email;\n\nconst rows = $input.all().map((i) => i.json).filter((r) => r && r.ticket_id);\nconst open = rows.find((r) => r.order_id === row.order_id && String(r.status).trim().toLowerCase() !== 'closed');\nconst note = '[' + email.id + ' ' + email.received_at + '] ' + row.notes;\n\nlet mode;\nlet ticket;\nif (open) {\n  const ids = String(open.email_ids || '').split(',').map((s) => s.trim()).filter(Boolean);\n  const already = ids.includes(email.id);\n  mode = already ? 'noop' : 'update';\n  ticket = Object.assign({}, open, already ? {} : {\n    updated_at: email.received_at, email_ids: ids.concat(email.id).join(', '), notes: String(open.notes || '') + '\\n' + note\n  });\n} else {\n  mode = 'create';\n  const nums = rows.map((r) => parseInt(String(r.ticket_id).replace(/\\D/g, ''), 10)).filter((n) => !isNaN(n));\n  ticket = {\n    ticket_id: 'TKT-' + String((nums.length ? Math.max.apply(null, nums) : 0) + 1).padStart(3, '0'),\n    created_at: email.received_at, updated_at: email.received_at,\n    order_id: row.order_id, customer_email: String(email.from.email).toLowerCase(), email_ids: email.id,\n    intent: row.intent, priority: row.sentiment === 'angry' ? 'High' : 'Medium', status: 'Open',\n    summary: row.notes, notes: note\n  };\n}\nreturn [{ json: { mode, ticket } }];\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000013",
+      "name": "Plan ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Tickets v1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket.ticket_id }}",
+            "created_at": "={{ $json.ticket.created_at }}",
+            "updated_at": "={{ $json.ticket.updated_at }}",
+            "order_id": "={{ $json.ticket.order_id }}",
+            "customer_email": "={{ $json.ticket.customer_email }}",
+            "email_ids": "={{ $json.ticket.email_ids }}",
+            "intent": "={{ $json.ticket.intent }}",
+            "priority": "={{ $json.ticket.priority }}",
+            "status": "={{ $json.ticket.status }}",
+            "summary": "={{ $json.ticket.summary }}",
+            "notes": "={{ $json.ticket.notes }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_id",
+              "displayName": "order_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_ids",
+              "displayName": "email_ids",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6000000-0000-4000-8000-000000000014",
+      "name": "Write ticket",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2300,
+        100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Node: \"Build audit row\"  (n8n Code node, run once for each item)  [v1]\n//\n// Takes the row the classifier already built and fills in what v1 knows: the action,\n// the reply, needs_human, the ticket id and the token estimate.\n\nconst d = $('Decide').first().json;\nconst row = Object.assign({}, d.row);\n\nlet ticketId = '';\nlet ticketMode = '';\ntry { const t = $('Plan ticket').first().json; ticketId = t.ticket.ticket_id; ticketMode = t.mode; } catch (e) { /* no ticket */ }\n\nconst prep = $('Prepare email').first().json;\nrow.action_taken = d.action;\nrow.order_found = d.order_found === null ? '' : (d.order_found ? 'TRUE' : 'FALSE');\nrow.needs_human = d.needs_human ? 'TRUE' : 'FALSE';\nrow.ticket_id = ticketId;\nrow.reply_draft = d.reply;\nrow.processed_at = new Date().toISOString();\nrow.tokens_in = (Number(row.tokens_in) || 0) + d.tokens_agent_in_est;\nrow.tokens_out = (Number(row.tokens_out) || 0) + d.tokens_agent_out_est;\nrow.latency_ms = Date.now() - (prep.started_at || Date.now());\nrow.notes = row.notes + (d.reasons.length ? ' | Needs human: ' + d.reasons.join(', ') : '') + (ticketMode ? ' | Ticket ' + ticketId + ' (' + ticketMode + ')' : '');\nrow.guard_flags = '';\nrow.facts_json = '';\nrow.trace_json = JSON.stringify({ steps: [\n  { name: 'classify', model: prep.model, tokens_in: JSON.parse(row.trace_json || '{\"steps\":[{}]}').steps[0].tokens_in },\n  { name: 'agent', tools: d.tools_used, tokens_in_est: d.tokens_agent_in_est, tokens_out_est: d.tokens_agent_out_est, tokens_are_estimates: true },\n  { name: 'ticket', mode: ticketMode || 'none', id: ticketId }\n] });\n\nreturn { json: { row } };\n"
+      },
+      "id": "a6000000-0000-4000-8000-000000000015",
+      "name": "Build audit row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2520,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Audit Log v1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_id": "={{ $json.row.email_id }}",
+            "received_at": "={{ $json.row.received_at }}",
+            "from_email": "={{ $json.row.from_email }}",
+            "intent": "={{ $json.row.intent }}",
+            "secondary_intent": "={{ $json.row.secondary_intent }}",
+            "order_id": "={{ $json.row.order_id }}",
+            "language": "={{ $json.row.language }}",
+            "sentiment": "={{ $json.row.sentiment }}",
+            "confidence": "={{ $json.row.confidence }}",
+            "order_found": "={{ $json.row.order_found }}",
+            "action_taken": "={{ $json.row.action_taken }}",
+            "needs_human": "={{ $json.row.needs_human }}",
+            "ticket_id": "={{ $json.row.ticket_id }}",
+            "reply_draft": "={{ $json.row.reply_draft }}",
+            "prompt_version": "={{ $json.row.prompt_version }}",
+            "processed_at": "={{ $json.row.processed_at }}",
+            "error": "={{ $json.row.error }}",
+            "notes": "={{ $json.row.notes }}",
+            "model": "={{ $json.row.model }}",
+            "tokens_in": "={{ $json.row.tokens_in }}",
+            "tokens_out": "={{ $json.row.tokens_out }}",
+            "cost_usd": "={{ $json.row.cost_usd }}",
+            "latency_ms": "={{ $json.row.latency_ms }}",
+            "guard_flags": "={{ $json.row.guard_flags }}",
+            "facts_json": "={{ $json.row.facts_json }}",
+            "trace_json": "={{ $json.row.trace_json }}"
+          },
+          "matchingColumns": [
+            "email_id"
+          ],
+          "schema": [
+            {
+              "id": "email_id",
+              "displayName": "email_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "from_email",
+              "displayName": "from_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secondary_intent",
+              "displayName": "secondary_intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_id",
+              "displayName": "order_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_found",
+              "displayName": "order_found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_taken",
+              "displayName": "action_taken",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "needs_human",
+              "displayName": "needs_human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reply_draft",
+              "displayName": "reply_draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_version",
+              "displayName": "prompt_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tokens_in",
+              "displayName": "tokens_in",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tokens_out",
+              "displayName": "tokens_out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_usd",
+              "displayName": "cost_usd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "latency_ms",
+              "displayName": "latency_ms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "guard_flags",
+              "displayName": "guard_flags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "facts_json",
+              "displayName": "facts_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "trace_json",
+              "displayName": "trace_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6000000-0000-4000-8000-000000000016",
+      "name": "Write Audit Log v1 row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2740,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Email webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare email": {
+      "main": [
+        [
+          {
+            "node": "Gemini classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini classify": {
+      "main": [
+        [
+          {
+            "node": "Validate classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate classification": {
+      "main": [
+        [
+          {
+            "node": "Build agent input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build agent input": {
+      "main": [
+        [
+          {
+            "node": "Reply agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply agent": {
+      "main": [
+        [
+          {
+            "node": "Decide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reply agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reply agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_faq": {
+      "ai_tool": [
+        [
+          {
+            "node": "Reply agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide": {
+      "main": [
+        [
+          {
+            "node": "Ticket needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket needed?": {
+      "main": [
+        [
+          {
+            "node": "Get tickets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build audit row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get tickets": {
+      "main": [
+        [
+          {
+            "node": "Plan ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan ticket": {
+      "main": [
+        [
+          {
+            "node": "Write ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write ticket": {
+      "main": [
+        [
+          {
+            "node": "Build audit row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build audit row": {
+      "main": [
+        [
+          {
+            "node": "Write Audit Log v1 row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

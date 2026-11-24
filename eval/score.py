@@ -77,6 +77,10 @@ def main():
     for r in audit:
         by_id.setdefault(r["email_id"], []).append(r)
 
+    # The action-name check only makes sense for a run that uses the v2 action names.
+    v2_names = {x["action"] for x in exp.values()}
+    uses_v2_actions = sum(1 for r in audit if r.get("action_taken") in v2_names) >= len(audit) // 2
+
     fails = {}      # email id -> list of problems
     m = {k: [0, 0] for k in ["intent", "order_id", "order_found", "language", "reply_presence", "ticket", "needs_human", "action", "priority", "signoff", "no_emoji", "length_3_6", "content_must", "content_must_not", "amounts_ok", "links_ok", "schema_valid"]}
 
@@ -137,8 +141,8 @@ def main():
         if "priority" in x and x["ticket"] == "new":
             tk = next((t for t in tickets if t["ticket_id"] == r.get("ticket_id")), {})
             hit("priority", tk.get("priority") == x["priority"], eid, f"priority {tk.get('priority')} != {x['priority']}")
-        if r.get("action_taken") is not None and r.get("action_taken") != "":
-            hit("action", r["action_taken"] == x["action"], eid, f"{r['action_taken']} != {x['action']}")
+        if uses_v2_actions:
+            hit("action", r.get("action_taken") == x["action"], eid, f"{r.get('action_taken')} != {x['action']}")
 
         if has_reply:
             hit("signoff", reply.rstrip().endswith(SIGN), eid, "sign-off not exact")
@@ -151,15 +155,16 @@ def main():
                 hit("content_must_not", re.search(p, reply, re.I) is None, eid, f"contains /{p}/")
             # every rupee amount must come from the order record, policy, or the key's extra amounts
             allowed = set(POLICY_AMOUNTS) | set(x.get("extra_amounts", []))
-            o = orders.get(r.get("order_id") or "")
-            if o and truthy(r.get("order_found")):
+            # Facts the reply may use: only from orders that belong to the person who wrote in.
+            mine = [o for o in orders.values() if o["customer_email"].lower() == (r.get("from_email") or "").lower()]
+            for o in mine:
                 for it in o["items"]:
                     allowed |= {it["unit_price"], it["unit_price"] * it["qty"]}
                 allowed |= {o["subtotal"], o["shipping_fee"], o["cod_fee"], o["total"]}
             for amt in re.findall(r"(?:₹|Rs\.?|INR)\s*([\d,]+)", reply):
                 hit("amounts_ok", int(amt.replace(",", "")) in allowed, eid, f"amount {amt} not in the facts")
             urls = [u.rstrip(".,;)") for u in re.findall(r"https?://\S+", reply)]
-            ok_urls = {o["tracking_url"]} if o and truthy(r.get("order_found")) and o.get("tracking_url") else set()
+            ok_urls = {o["tracking_url"] for o in mine if o.get("tracking_url")}
             for u in urls:
                 hit("links_ok", u in ok_urls or "kesarandco.example" in u, eid, f"link {u} not from the order")
 
@@ -175,7 +180,7 @@ def main():
         ("schema_valid", "Valid structured output (enums, confidence)"), ("intent", "Intent correct"), ("order_id", "Order id correct"),
         ("order_found", "Order found / not found correct"), ("language", "Language detected"), ("reply_presence", "Reply drafted only when needed"),
         ("ticket", "Ticket decision correct (new / update / none)"), ("priority", "Ticket priority correct"), ("needs_human", "needs_human correct"),
-        ("action", "Action name correct (v2 names only)"), ("signoff", "Exact sign-off"), ("no_emoji", "No emoji, at most one '!'"),
+        ("action", "Action name correct (only for runs that use v2 action names)"), ("signoff", "Exact sign-off"), ("no_emoji", "No emoji, at most one '!'"),
         ("length_3_6", "Body is 3 to 6 sentences (soft)"), ("content_must", "Reply contains required facts"), ("content_must_not", "Reply avoids forbidden content"),
         ("amounts_ok", "Every rupee amount is from the facts"), ("links_ok", "Every link is from the order")]
     lines = [f"## Score: {a.label}", "", "| Check | Passed | Rate |", "|---|---|---|"]
