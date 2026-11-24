@@ -1,0 +1,429 @@
+{
+  "name": "Kesar Support Copilot - Phase 1 (classify and log)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kesar-support-email",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Email webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b2000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const SYSTEM_PROMPT = \"You are a support triage assistant for Kesar & Co., an Indian D2C Ayurvedic skincare brand that sells on Shopify.\\n\\nRead the customer email and return a JSON object with these fields:\\n\\n- intent: the customer's main need. One of:\\n  - order_status: asking where an order is, or when it will arrive\\n  - product_query: questions about products, ingredients, shipping, COD or other policies\\n  - return_refund: wants to return something, get a refund or replacement, or reports a damaged, wrong or missing item\\n  - complaint: unhappy with the service or experience, or angry\\n  - other: spam, partnership or press enquiries, invoices, thank-you notes, anything else\\n- secondary_intent: a second need in the same email, using the same list, or null\\n- order_id: the order number exactly as KC-#### if the email mentions one, otherwise null. Do not guess.\\n- sentiment: positive, neutral, negative or angry\\n- language: en (English), hi (Hindi in Devanagari) or hinglish (Hindi written in Latin letters mixed with English)\\n- confidence: a number from 0 to 1 for how sure you are about the intent\\n- summary: one line for the support team, in English, under 200 characters\\n\\nReturn only the JSON object.\";\nconst POLICY = {\"scenario_today\":\"2026-11-20\",\"return_window_days\":7,\"damage_report_window_hours\":48,\"free_shipping_min_inr\":999,\"shipping_fee_inr\":79,\"cod_limit_inr\":5000,\"cod_fee_inr\":49,\"confidence_threshold\":0.75,\"high_value_inr\":3000,\"delivery_days_after_dispatch\":{\"metro\":\"2-4\",\"rest_of_india\":\"4-6\",\"north_east_and_remote\":\"6-8\"},\"dispatch_business_days\":\"1-2\",\"follow_up_business_hours\":24};\n\n// Node: \"Prepare email\"  (n8n Code node, run once for each item)\n//\n// Takes the webhook payload (one email, exactly as in data/test_emails.json)\n// and builds the request we send to Gemini.\n//\n// SYSTEM_PROMPT and POLICY are added above this code by scripts/build_workflow.js,\n// from prompts/classify_v1.md and config/policy.json. Edit those files, not the\n// workflow JSON.\n\nconst MODEL = 'gemini-2.5-flash';       // change here if the model name changes\nconst PROMPT_VERSION = 'v1';\n\nconst email = $json.body || {};\n\n// Basic shape check. A broken payload should be logged, not crash the flow.\nconst missing = [];\nif (!email.id) missing.push('id');\nif (!email.from || !email.from.email) missing.push('from.email');\nif (!email.body) missing.push('body');\n\n// The model only sees the text of the email.\nconst userText =\n  'From: ' + (email.from && email.from.name || '') + ' <' + (email.from && email.from.email || '') + '>\\n' +\n  'Subject: ' + (email.subject || '') + '\\n' +\n  'Attachments: ' + ((email.attachments || []).join(', ') || 'none') + '\\n\\n' +\n  (email.body || '');\n\n// Smaller schema for Gemini. Gemini does not accept \"pattern\", \"maxLength\" or\n// type arrays, so those rules are checked in the next node instead.\nconst intents = ['order_status', 'product_query', 'return_refund', 'complaint', 'other'];\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    intent: { type: 'STRING', enum: intents },\n    secondary_intent: { type: 'STRING', enum: intents, nullable: true },\n    order_id: { type: 'STRING', nullable: true },\n    sentiment: { type: 'STRING', enum: ['positive', 'neutral', 'negative', 'angry'] },\n    language: { type: 'STRING', enum: ['en', 'hi', 'hinglish'] },\n    confidence: { type: 'NUMBER' },\n    summary: { type: 'STRING' }\n  },\n  required: ['intent', 'secondary_intent', 'order_id', 'sentiment', 'language', 'confidence', 'summary']\n};\n\nreturn {\n  json: {\n    email,\n    missing_fields: missing,\n    model: MODEL,\n    prompt_version: PROMPT_VERSION,\n    started_at: Date.now(),\n    gemini_request: {\n      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },\n      contents: [{ role: 'user', parts: [{ text: userText }] }],\n      generationConfig: {\n        temperature: 0,\n        responseMimeType: 'application/json',\n        responseSchema\n      }\n    }\n  }\n};\n"
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Prepare email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.gemini_request) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Gemini classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const POLICY = {\"scenario_today\":\"2026-11-20\",\"return_window_days\":7,\"damage_report_window_hours\":48,\"free_shipping_min_inr\":999,\"shipping_fee_inr\":79,\"cod_limit_inr\":5000,\"cod_fee_inr\":49,\"confidence_threshold\":0.75,\"high_value_inr\":3000,\"delivery_days_after_dispatch\":{\"metro\":\"2-4\",\"rest_of_india\":\"4-6\",\"north_east_and_remote\":\"6-8\"},\"dispatch_business_days\":\"1-2\",\"follow_up_business_hours\":24};\n\n// Node: \"Validate classification\"  (n8n Code node, run once for each item)\n//\n// Checks the model's answer against schemas/llm_output.schema.json and builds\n// the Audit Log row. It never throws: if anything is wrong the email falls back\n// to intent \"other\" with needs_human = TRUE, and the reason goes in \"error\".\n//\n// POLICY is added above this code by scripts/build_workflow.js (config/policy.json).\n\nconst INTENTS = ['order_status', 'product_query', 'return_refund', 'complaint', 'other'];\nconst SENTIMENTS = ['positive', 'neutral', 'negative', 'angry'];\nconst LANGUAGES = ['en', 'hi', 'hinglish'];\n\nconst prep = $('Prepare email').item.json;\nconst email = prep.email || {};\nconst resp = $input.item.json;\nconst usage = resp.usageMetadata || {};\n\n// Returns a list of problems. An empty list means the output is valid.\nfunction check(o) {\n  const p = [];\n  if (typeof o !== 'object' || o === null || Array.isArray(o)) return ['not a JSON object'];\n  for (const k of ['intent', 'secondary_intent', 'order_id', 'sentiment', 'language', 'confidence', 'summary']) {\n    if (!(k in o)) p.push('missing ' + k);\n  }\n  if (!INTENTS.includes(o.intent)) p.push('bad intent');\n  if (o.secondary_intent !== null && !INTENTS.includes(o.secondary_intent)) p.push('bad secondary_intent');\n  if (o.order_id !== null && !/^KC-[0-9]{4}$/.test(String(o.order_id))) p.push('bad order_id');\n  if (!SENTIMENTS.includes(o.sentiment)) p.push('bad sentiment');\n  if (!LANGUAGES.includes(o.language)) p.push('bad language');\n  if (typeof o.confidence !== 'number' || o.confidence < 0 || o.confidence > 1) p.push('bad confidence');\n  if (typeof o.summary !== 'string') p.push('bad summary');\n  else if (o.summary.length > 200) p.push('summary over 200 chars');\n  return p;\n}\n\nlet result = null;\nlet error = '';\nlet validFirstTry = false;\n\ntry {\n  if (prep.missing_fields && prep.missing_fields.length) {\n    throw new Error('payload missing: ' + prep.missing_fields.join(', '));\n  }\n  if (resp.error) {\n    throw new Error('LLM call failed: ' + String(resp.error.message || JSON.stringify(resp.error)).slice(0, 200));\n  }\n  const text = resp.candidates && resp.candidates[0] && resp.candidates[0].content &&\n    resp.candidates[0].content.parts && resp.candidates[0].content.parts[0].text;\n  if (!text) throw new Error('empty model response');\n\n  const parsed = JSON.parse(text);\n  const problems = check(parsed);\n  validFirstTry = problems.length === 0;\n\n  // One cheap repair we can do safely: cut a too-long summary.\n  if (problems.length === 1 && problems[0] === 'summary over 200 chars') {\n    parsed.summary = parsed.summary.slice(0, 197) + '...';\n    error = 'repaired: summary shortened';\n  } else if (problems.length) {\n    throw new Error('invalid output: ' + problems.join('; '));\n  }\n  result = parsed;\n} catch (e) {\n  error = String(e.message || e).slice(0, 300);\n}\n\nconst fallback = result === null;\nif (fallback) {\n  result = {\n    intent: 'other', secondary_intent: null, order_id: null, sentiment: 'neutral',\n    language: 'en', confidence: 0, summary: 'Classification failed, needs manual review.'\n  };\n}\n\nconst needsHuman = fallback || result.confidence < POLICY.confidence_threshold;\nconst latency = Date.now() - (prep.started_at || Date.now());\n\nconst row = {\n  email_id: email.id || '',\n  received_at: email.received_at || '',\n  from_email: (email.from && email.from.email) || '',\n  intent: result.intent,\n  secondary_intent: result.secondary_intent === null ? '' : result.secondary_intent,\n  order_id: result.order_id === null ? '' : result.order_id,\n  language: result.language,\n  sentiment: result.sentiment,\n  confidence: result.confidence,\n  order_found: '',\n  action_taken: fallback ? 'fallback_needs_human' : 'classified_only',\n  needs_human: needsHuman ? 'TRUE' : 'FALSE',\n  ticket_id: '',\n  reply_draft: '',\n  prompt_version: prep.prompt_version,\n  processed_at: new Date().toISOString(),\n  error: error,\n  notes: result.summary,\n  model: prep.model,\n  tokens_in: usage.promptTokenCount || '',\n  tokens_out: usage.candidatesTokenCount || '',\n  cost_usd: '',\n  latency_ms: latency,\n  guard_flags: '',\n  facts_json: '',\n  trace_json: JSON.stringify({\n    steps: [{ name: 'classify', model: prep.model, ms: latency, valid_first_try: validFirstTry,\n              tokens_in: usage.promptTokenCount || 0, tokens_out: usage.candidatesTokenCount || 0 }]\n  })\n};\n\nreturn { json: { row } };\n"
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Validate classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1E876dXOmopYZUy0Z4IYtzzmpBYpyTCVpRLBB_K0-VH8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Audit Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_id": "={{ $json.row.email_id }}",
+            "received_at": "={{ $json.row.received_at }}",
+            "from_email": "={{ $json.row.from_email }}",
+            "intent": "={{ $json.row.intent }}",
+            "secondary_intent": "={{ $json.row.secondary_intent }}",
+            "order_id": "={{ $json.row.order_id }}",
+            "language": "={{ $json.row.language }}",
+            "sentiment": "={{ $json.row.sentiment }}",
+            "confidence": "={{ $json.row.confidence }}",
+            "order_found": "={{ $json.row.order_found }}",
+            "action_taken": "={{ $json.row.action_taken }}",
+            "needs_human": "={{ $json.row.needs_human }}",
+            "ticket_id": "={{ $json.row.ticket_id }}",
+            "reply_draft": "={{ $json.row.reply_draft }}",
+            "prompt_version": "={{ $json.row.prompt_version }}",
+            "processed_at": "={{ $json.row.processed_at }}",
+            "error": "={{ $json.row.error }}",
+            "notes": "={{ $json.row.notes }}",
+            "model": "={{ $json.row.model }}",
+            "tokens_in": "={{ $json.row.tokens_in }}",
+            "tokens_out": "={{ $json.row.tokens_out }}",
+            "cost_usd": "={{ $json.row.cost_usd }}",
+            "latency_ms": "={{ $json.row.latency_ms }}",
+            "guard_flags": "={{ $json.row.guard_flags }}",
+            "facts_json": "={{ $json.row.facts_json }}",
+            "trace_json": "={{ $json.row.trace_json }}"
+          },
+          "matchingColumns": [
+            "email_id"
+          ],
+          "schema": [
+            {
+              "id": "email_id",
+              "displayName": "email_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "from_email",
+              "displayName": "from_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secondary_intent",
+              "displayName": "secondary_intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_id",
+              "displayName": "order_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_found",
+              "displayName": "order_found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_taken",
+              "displayName": "action_taken",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "needs_human",
+              "displayName": "needs_human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reply_draft",
+              "displayName": "reply_draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_version",
+              "displayName": "prompt_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tokens_in",
+              "displayName": "tokens_in",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tokens_out",
+              "displayName": "tokens_out",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_usd",
+              "displayName": "cost_usd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "latency_ms",
+              "displayName": "latency_ms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "guard_flags",
+              "displayName": "guard_flags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "facts_json",
+              "displayName": "facts_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "trace_json",
+              "displayName": "trace_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Write Audit Log row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        960,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lHRcWR7m06r1xfQg",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Email webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare email": {
+      "main": [
+        [
+          {
+            "node": "Gemini classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini classify": {
+      "main": [
+        [
+          {
+            "node": "Validate classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate classification": {
+      "main": [
+        [
+          {
+            "node": "Write Audit Log row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
