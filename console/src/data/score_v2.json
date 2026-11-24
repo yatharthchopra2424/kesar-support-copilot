@@ -1,0 +1,277 @@
+{
+ "label": "v2",
+ "checks": [
+  {
+   "key": "schema_valid",
+   "name": "Valid structured output (enums, confidence)",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "intent",
+   "name": "Intent correct",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "order_id",
+   "name": "Order id correct",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "order_found",
+   "name": "Order found / not found correct",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "language",
+   "name": "Language detected",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "reply_presence",
+   "name": "Reply drafted only when needed",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "ticket",
+   "name": "Ticket decision correct (new / update / none)",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "priority",
+   "name": "Ticket priority correct",
+   "passed": 3,
+   "total": 3
+  },
+  {
+   "key": "needs_human",
+   "name": "needs_human correct",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "action",
+   "name": "Action name correct (only for runs that use v2 action names)",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "signoff",
+   "name": "Exact sign-off",
+   "passed": 23,
+   "total": 23
+  },
+  {
+   "key": "no_emoji",
+   "name": "No emoji, at most one '!'",
+   "passed": 23,
+   "total": 23
+  },
+  {
+   "key": "length_3_6",
+   "name": "Body is 3 to 6 sentences (soft)",
+   "passed": 21,
+   "total": 23
+  },
+  {
+   "key": "content_must",
+   "name": "Reply contains required facts",
+   "passed": 20,
+   "total": 20
+  },
+  {
+   "key": "content_must_not",
+   "name": "Reply avoids forbidden content",
+   "passed": 35,
+   "total": 35
+  },
+  {
+   "key": "amounts_ok",
+   "name": "Every rupee amount is from the facts",
+   "passed": 9,
+   "total": 9
+  },
+  {
+   "key": "links_ok",
+   "name": "Every link is from the order",
+   "passed": 4,
+   "total": 4
+  }
+ ],
+ "emails": [
+  {
+   "id": "E01",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E02",
+   "ok": true,
+   "problems": [],
+   "soft": [
+    "2 sentences"
+   ]
+  },
+  {
+   "id": "E03",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E04",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E05",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E06",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E07",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E08",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E09",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E10",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E11",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E12",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E13",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E14",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E15",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E16",
+   "ok": true,
+   "problems": [],
+   "soft": [
+    "2 sentences"
+   ]
+  },
+  {
+   "id": "E17",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E18",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E19",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E20",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E21",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E22",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E23",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E24",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E25",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  }
+ ],
+ "reliability": {
+  "rows": 25,
+  "tickets": 9,
+  "missing": [],
+  "multi_row": [],
+  "duplicate_open_tickets": {},
+  "errors": [],
+  "hard_flags": [],
+  "tokens_in": 49938.0,
+  "tokens_out": 6694.0,
+  "avg_tokens": 2265.28,
+  "avg_latency_ms": 4579.08,
+  "max_latency_ms": 8226.0
+ }
+}

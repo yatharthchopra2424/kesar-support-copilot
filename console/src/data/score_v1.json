@@ -1,0 +1,360 @@
+{
+ "label": "v1",
+ "checks": [
+  {
+   "key": "schema_valid",
+   "name": "Valid structured output (enums, confidence)",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "intent",
+   "name": "Intent correct",
+   "passed": 24,
+   "total": 25
+  },
+  {
+   "key": "order_id",
+   "name": "Order id correct",
+   "passed": 24,
+   "total": 25
+  },
+  {
+   "key": "order_found",
+   "name": "Order found / not found correct",
+   "passed": 23,
+   "total": 25
+  },
+  {
+   "key": "language",
+   "name": "Language detected",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "reply_presence",
+   "name": "Reply drafted only when needed",
+   "passed": 23,
+   "total": 25
+  },
+  {
+   "key": "ticket",
+   "name": "Ticket decision correct (new / update / none)",
+   "passed": 25,
+   "total": 25
+  },
+  {
+   "key": "priority",
+   "name": "Ticket priority correct",
+   "passed": 1,
+   "total": 3
+  },
+  {
+   "key": "needs_human",
+   "name": "needs_human correct",
+   "passed": 14,
+   "total": 25
+  },
+  {
+   "key": "signoff",
+   "name": "Exact sign-off",
+   "passed": 3,
+   "total": 23
+  },
+  {
+   "key": "no_emoji",
+   "name": "No emoji, at most one '!'",
+   "passed": 12,
+   "total": 23
+  },
+  {
+   "key": "length_3_6",
+   "name": "Body is 3 to 6 sentences (soft)",
+   "passed": 19,
+   "total": 23
+  },
+  {
+   "key": "content_must",
+   "name": "Reply contains required facts",
+   "passed": 14,
+   "total": 19
+  },
+  {
+   "key": "content_must_not",
+   "name": "Reply avoids forbidden content",
+   "passed": 30,
+   "total": 35
+  },
+  {
+   "key": "amounts_ok",
+   "name": "Every rupee amount is from the facts",
+   "passed": 7,
+   "total": 7
+  },
+  {
+   "key": "links_ok",
+   "name": "Every link is from the order",
+   "passed": 4,
+   "total": 5
+  }
+ ],
+ "emails": [
+  {
+   "id": "E01",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E02",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E03",
+   "ok": false,
+   "problems": [
+    "order_found: found ",
+    "signoff: sign-off not exact",
+    "content_must: missing /899/"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E04",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E05",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E06",
+   "ok": true,
+   "problems": [],
+   "soft": []
+  },
+  {
+   "id": "E07",
+   "ok": false,
+   "problems": [
+    "order_found: found True",
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'",
+    "content_must_not: contains /track\\.example/",
+    "content_must_not: contains /SwiftShip/",
+    "content_must_not: contains /Adyar/",
+    "content_must_not: contains /Lotus/",
+    "content_must_not: contains /600020/",
+    "links_ok: link https://track.example.com/SS7781046 not from the order"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E08",
+   "ok": false,
+   "problems": [
+    "intent: return_refund != complaint",
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact",
+    "content_must: missing /photo/"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E09",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E10",
+   "ok": false,
+   "problems": [
+    "order_id: '' != 'KC-1044'",
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": [
+    "7 sentences"
+   ]
+  },
+  {
+   "id": "E11",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "no_emoji: emoji or too many '!'",
+    "content_must: missing /3,499/"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E12",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "priority: priority Medium != Low",
+    "signoff: sign-off not exact"
+   ],
+   "soft": [
+    "7 sentences"
+   ]
+  },
+  {
+   "id": "E13",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E14",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E15",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'",
+    "content_must: missing /exact (change|amount)/"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E16",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "priority: priority Medium != Low",
+    "signoff: sign-off not exact"
+   ],
+   "soft": [
+    "7 sentences"
+   ]
+  },
+  {
+   "id": "E17",
+   "ok": false,
+   "problems": [
+    "reply_presence: reply missing"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E18",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E19",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact",
+    "content_must: missing /1,648/"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E20",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E21",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": [
+    "7 sentences"
+   ]
+  },
+  {
+   "id": "E22",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E23",
+   "ok": false,
+   "problems": [
+    "needs_human: needs_human False != True",
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E24",
+   "ok": false,
+   "problems": [
+    "signoff: sign-off not exact"
+   ],
+   "soft": []
+  },
+  {
+   "id": "E25",
+   "ok": false,
+   "problems": [
+    "reply_presence: reply present",
+    "signoff: sign-off not exact",
+    "no_emoji: emoji or too many '!'"
+   ],
+   "soft": []
+  }
+ ],
+ "reliability": {
+  "rows": 25,
+  "tickets": 9,
+  "missing": [],
+  "multi_row": [],
+  "duplicate_open_tickets": {},
+  "errors": [],
+  "hard_flags": [],
+  "tokens_in": 36506.0,
+  "tokens_out": 4599.0,
+  "avg_tokens": 1644.2,
+  "avg_latency_ms": 5058.16,
+  "max_latency_ms": 15333.0
+ }
+}

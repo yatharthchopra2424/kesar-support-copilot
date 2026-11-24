@@ -56,6 +56,8 @@ def sentences(reply):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url")
+    ap.add_argument("--run", help="a saved data-API response (JSON file with audit and tickets)")
+    ap.add_argument("--json", help="also write the result as JSON (the Ops Console reads this)")
     ap.add_argument("--audit")
     ap.add_argument("--tickets")
     ap.add_argument("--label", default="v2")
@@ -65,13 +67,13 @@ def main():
 
     exp = json.loads(Path(a.expected).read_text(encoding="utf-8"))["emails"]
     orders = {o["order_id"]: o for o in json.loads((ROOT / "data" / "orders.json").read_text(encoding="utf-8"))["orders"]}
-    if a.url:
-        data = load_url(a.url)
+    if a.url or a.run:
+        data = load_url(a.url) if a.url else json.loads(Path(a.run).read_text(encoding="utf-8"))
         audit, tickets = data["audit"], data["tickets"]
     elif a.audit and a.tickets:
         audit, tickets = load_csv(a.audit), load_csv(a.tickets)
     else:
-        sys.exit("give --url, or --audit and --tickets")
+        sys.exit("give --url, --run, or --audit and --tickets")
 
     by_id = {}
     for r in audit:
@@ -82,6 +84,7 @@ def main():
     uses_v2_actions = sum(1 for r in audit if r.get("action_taken") in v2_names) >= len(audit) // 2
 
     fails = {}      # email id -> list of problems
+    soft = {}       # email id -> soft notes (not counted as failures)
     m = {k: [0, 0] for k in ["intent", "order_id", "order_found", "language", "reply_presence", "ticket", "needs_human", "action", "priority", "signoff", "no_emoji", "length_3_6", "content_must", "content_must_not", "amounts_ok", "links_ok", "schema_valid"]}
 
     def hit(metric, ok, eid=None, why=""):
@@ -149,6 +152,8 @@ def main():
             hit("no_emoji", not EMOJI.search(reply) and reply.count("!") <= 1, eid, "emoji or too many '!'")
             n = len(sentences(reply))
             hit("length_3_6", 3 <= n <= 6, None)   # soft: reported, not listed as a failure
+            if not 3 <= n <= 6:
+                soft.setdefault(eid, []).append(f"{n} sentences")
             for p in x.get("must", []):
                 hit("content_must", re.search(p, reply, re.I) is not None, eid, f"missing /{p}/")
             for p in x.get("must_not", []):
@@ -207,6 +212,17 @@ def main():
     print(out)
     if a.markdown:
         Path(a.markdown).write_text(out + "\n", encoding="utf-8")
+    if a.json:
+        per_email = [{"id": e, "ok": e not in fails, "problems": fails.get(e, []), "soft": soft.get(e, [])} for e in exp]
+        Path(a.json).write_text(json.dumps({
+            "label": a.label,
+            "checks": [{"key": k, "name": n, "passed": m[k][0], "total": m[k][1]} for k, n in labels if m[k][1]],
+            "emails": per_email,
+            "reliability": {"rows": len(audit), "tickets": len(tickets), "missing": missing, "multi_row": dupes,
+                            "duplicate_open_tickets": dup_tickets, "errors": errs, "hard_flags": [list(h) for h in hard],
+                            "tokens_in": tin, "tokens_out": tout, "avg_tokens": (tin + tout) / max(len(audit), 1),
+                            "avg_latency_ms": sum(lat) / max(len(lat), 1), "max_latency_ms": max(lat) if lat else 0},
+        }, indent=1), encoding="utf-8")
     hard_fail = missing or dupes or dup_tickets
     return 1 if (hard_fail or fails) else 0
 
