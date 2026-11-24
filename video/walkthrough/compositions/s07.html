@@ -1,0 +1,98 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+
+  .colh { position: absolute; left: 160px; top: 262px; width: 1090px; height: 56px; font-size: 30px; font-weight: 620; opacity: 0; }
+  .colh .c1 { position: absolute; left: 360px; color: #B3261E; } .colh .c2 { position: absolute; left: 780px; color: #1F7A4D; }
+  .row { position: absolute; left: 160px; width: 1090px; height: 100px; opacity: 0; }
+  .rl { position: absolute; left: 0; top: 24px; width: 340px; font-size: 32px; font-weight: 560; line-height: 1.15; }
+  .bw { position: absolute; top: 34px; width: 240px; height: 34px; border-radius: 17px; background: #EEF0F4; box-shadow: inset 0 0 0 1px #CDD2DB; overflow: hidden; }
+  .b1 { left: 360px; } .b2 { left: 780px; }
+  .bf { height: 100%; width: 0; border-radius: 17px; }
+  .f1 { background: #B3261E; } .f2 { background: #1F7A4D; }
+  .rv { position: absolute; top: 24px; font-size: 38px; font-weight: 640; font-feature-settings: 'tnum'; }
+  .v1 { left: 620px; color: #B3261E; } .v2 { left: 1040px; color: #1F7A4D; }
+  .note { position: absolute; left: 160px; top: 868px; font-size: 30px; color: #3A404C; display: flex; gap: 18px; align-items: center; opacity: 0; white-space: nowrap; }
+  .leak { left: 1330px; top: 300px; width: 440px; padding: 30px; opacity: 0; }
+  .lt { font-size: 34px; font-weight: 640; margin-top: 20px; }
+  .lq { margin-top: 14px; padding: 12px 14px; background: #FBE9E7; border-radius: 8px; font-size: 28px; line-height: 1.3; color: #7a1c16; overflow-wrap: anywhere; }
+  .ls { margin-top: 20px; font-size: 30px; color: #1F7A4D; font-weight: 600; }</style>
+  <div id="root" data-composition-id="s07" data-width="1920" data-height="1080">
+    <div id="s07-stage" class="stage">
+      <div class="hd">v1 baseline against v2 final</div>
+      <div class="sb">Same 25 emails, same scorer, same answer key. v1 was run once and not tuned.</div>
+      <div id="s07-cols" class="colh"><span class="c1">v1 baseline</span><span class="c2">v2 final</span></div>
+      <div id="s07-r0" class="row" style="top:338px"><div class="rl">Intent correct</div>
+        <div class="bw b1"><div class="bf f1" id="s07-f1-0" style="width:96%"></div></div><div class="rv v1">24/25</div>
+        <div class="bw b2"><div class="bf f2" id="s07-f2-0" style="width:100%"></div></div><div class="rv v2">25/25</div></div>
+      <div id="s07-r1" class="row" style="top:466px"><div class="rl">Needs-human flag correct</div>
+        <div class="bw b1"><div class="bf f1" id="s07-f1-1" style="width:56.00000000000001%"></div></div><div class="rv v1">14/25</div>
+        <div class="bw b2"><div class="bf f2" id="s07-f2-1" style="width:100%"></div></div><div class="rv v2">25/25</div></div>
+      <div id="s07-r2" class="row" style="top:594px"><div class="rl">Exact sign-off</div>
+        <div class="bw b1"><div class="bf f1" id="s07-f1-2" style="width:13.043478260869565%"></div></div><div class="rv v1">3/23</div>
+        <div class="bw b2"><div class="bf f2" id="s07-f2-2" style="width:100%"></div></div><div class="rv v2">23/23</div></div>
+      <div id="s07-r3" class="row" style="top:722px"><div class="rl">Emails failing a hard check</div>
+        <div class="bw b1"><div class="bf f1" id="s07-f1-3" style="width:96%"></div></div><div class="rv v1">24</div>
+        <div class="bw b2"><div class="bf f2" id="s07-f2-3" style="width:0%"></div></div><div class="rv v2">0</div></div>
+      <div id="s07-note" class="note"><span class="chip human">Disclosure</span><span>v1 was built after v2, as a deliberate plain baseline.</span></div>
+      <div id="s07-leak" class="card leak"><span class="chip bad">v1 on E07</span>
+        <div class="lt">Sent to a stranger:</div>
+        <div class="lq mono">Delivery address on file: Flat 4B, Lotus Residency, Adyar, Chennai</div>
+        <div class="lq mono">Track: track.example.com/SS7781046</div>
+        <div class="ls">v2 refused and flagged a human.</div></div>
+    </div>
+    <div id="s07-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =true;
+    const OUT = true;
+    const DUR = 33.91;
+    if (IN) tl.fromTo('#s07-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s07-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s07-prog', { width: 1189.6 }, { width: 1430.7, duration: DUR, ease: 'none' }, 0);
+    tl.fromTo('#s07-cols', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 0.45);
+    tl.fromTo('#s07-r0', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 13.64);
+    tl.fromTo('#s07-f1-0', { width: '0%' }, { width: '96%', duration: 0.7, ease: 'power3.out' }, 13.79);
+    tl.fromTo('#s07-f2-0', { width: '0%' }, { width: '100%', duration: 0.7, ease: 'power3.out' }, 13.89);
+    tl.fromTo('#s07-r1', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 16.11);
+    tl.fromTo('#s07-f1-1', { width: '0%' }, { width: '56.00000000000001%', duration: 0.7, ease: 'power3.out' }, 16.26);
+    tl.fromTo('#s07-f2-1', { width: '0%' }, { width: '100%', duration: 0.7, ease: 'power3.out' }, 16.36);
+    tl.fromTo('#s07-r2', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 18.45);
+    tl.fromTo('#s07-f1-2', { width: '0%' }, { width: '13.043478260869565%', duration: 0.7, ease: 'power3.out' }, 18.6);
+    tl.fromTo('#s07-f2-2', { width: '0%' }, { width: '100%', duration: 0.7, ease: 'power3.out' }, 18.7);
+    tl.fromTo('#s07-r3', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 26.17);
+    tl.fromTo('#s07-f1-3', { width: '0%' }, { width: '96%', duration: 0.7, ease: 'power3.out' }, 26.32);
+    tl.fromTo('#s07-note', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 6.28);
+    tl.fromTo('#s07-leak', { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power3.out' }, 21.46);
+
+    window.__timelines['s07'] = tl;
+  </script>
+</template>

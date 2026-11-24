@@ -1,0 +1,94 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+</style>
+  <div id="root" data-composition-id="s04" data-width="1920" data-height="1080">
+    <div id="s04-stage" class="stage">
+      <div class="hd">E01: a plain order-status question</div>
+      <div class="sb">Trace page of the Ops Console, read from the stored run</div>
+      <div class="cam" data-layout-allow-overflow>
+      <div id="s04-w-e01_trace" class="world"><img src="assets/img/e01_trace.jpg" alt="">
+        <div id="s04-hl-0-0" class="hl" style="left:942px;top:94px;width:560px;height:242px"></div>
+        <div id="s04-hl-1-0" class="hl" style="left:280px;top:184px;width:658px;height:167px"></div>
+        <div id="s04-hl-2-0" class="hl" style="left:280px;top:360px;width:658px;height:78px"></div>
+        <div id="s04-hl-2-1" class="hl" style="left:280px;top:449px;width:658px;height:82px"></div>
+        <div id="s04-hl-3-0" class="hl" style="left:942px;top:339px;width:560px;height:279px"></div>
+        <div id="s04-hl-4-0" class="hl" style="left:280px;top:489px;width:658px;height:42px"></div>
+      </div>
+      </div>
+      <div class="lb">
+      <div id="s04-lb-0" class="lbi"><div><div class="tt">Ananya asks where her order is</div><div class="tx">Order KC-1041, Saffron Glow serum.</div></div></div>
+      <div id="s04-lb-1" class="lbi"><span class="chip llm">LLM</span><div><div class="tt">Classify</div><div class="tx">order_status, KC-1041, confidence 1. Valid JSON on the first try.</div></div></div>
+      <div id="s04-lb-2" class="lbi"><span class="chip code">Code</span><div><div class="tt">Lookup, decide</div><div class="tx">Order found by id.</div></div></div>
+      <div id="s04-lb-3" class="lbi"><span class="chip llm">LLM</span><div><div class="tt">Draft reply</div><div class="tx">Courier, date and tracking link are copied from the order record, not invented.</div></div></div>
+      <div id="s04-lb-4" class="lbi"><span class="chip code">Code</span><div><div class="tt">No ticket, no human</div><div class="tx">The draft is stored in the audit log. Nothing is sent.</div></div></div>
+      </div>
+    </div>
+    <div id="s04-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =true;
+    const OUT = true;
+    const DUR = 19.98;
+    if (IN) tl.fromTo('#s04-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s04-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s04-prog', { width: 549 }, { width: 691.1, duration: DUR, ease: 'none' }, 0);
+    tl.set('#s04-w-e01_trace', { x: -960, y: -98.3, scale: 1.667 }, 0);
+    tl.fromTo('#s04-w-e01_trace', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.1);
+    tl.fromTo('#s04-hl-0-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.45);
+    tl.to('#s04-hl-0-0', { opacity: 0, duration: 0.25 }, 5);
+    tl.fromTo('#s04-lb-0', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.45);
+    tl.to('#s04-lb-0', { opacity: 0, duration: 0.2 }, 5.06);
+    tl.fromTo('#s04-w-e01_trace', { x: -960, y: -98.3, scale: 1.667 }, { x: -433.8, y: -300.3, scale: 2.095, duration: 0.85, ease: 'power3.inOut' }, 5.11);
+    tl.fromTo('#s04-hl-1-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.26);
+    tl.to('#s04-hl-1-0', { opacity: 0, duration: 0.25 }, 8.47);
+    tl.fromTo('#s04-lb-1', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 5.26);
+    tl.to('#s04-lb-1', { opacity: 0, duration: 0.2 }, 8.53);
+    tl.fromTo('#s04-w-e01_trace', { x: -433.8, y: -300.3, scale: 2.095 }, { x: -433.8, y: -672.1, scale: 2.095, duration: 0.85, ease: 'power3.inOut' }, 8.58);
+    tl.fromTo('#s04-hl-2-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.73);
+    tl.to('#s04-hl-2-0', { opacity: 0, duration: 0.25 }, 9.97);
+    tl.fromTo('#s04-hl-2-1', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.73);
+    tl.to('#s04-hl-2-1', { opacity: 0, duration: 0.25 }, 9.97);
+    tl.fromTo('#s04-lb-2', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 8.73);
+    tl.to('#s04-lb-2', { opacity: 0, duration: 0.2 }, 10.03);
+    tl.fromTo('#s04-w-e01_trace', { x: -433.8, y: -672.1, scale: 2.095 }, { x: -594.3, y: -425.7, scale: 1.429, duration: 0.85, ease: 'power3.inOut' }, 10.08);
+    tl.fromTo('#s04-hl-3-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.23);
+    tl.to('#s04-hl-3-0', { opacity: 0, duration: 0.25 }, 16.11);
+    tl.fromTo('#s04-lb-3', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 10.23);
+    tl.to('#s04-lb-3', { opacity: 0, duration: 0.2 }, 16.17);
+    tl.fromTo('#s04-w-e01_trace', { x: -594.3, y: -425.7, scale: 1.429 }, { x: -433.8, y: -886.8, scale: 2.095, duration: 0.85, ease: 'power3.inOut' }, 16.22);
+    tl.fromTo('#s04-hl-4-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 16.37);
+    tl.to('#s04-hl-4-0', { opacity: 0, duration: 0.25 }, 19.28);
+    tl.fromTo('#s04-lb-4', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 16.37);
+
+    window.__timelines['s04'] = tl;
+  </script>
+</template>

@@ -1,0 +1,226 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+
+  .hero { position: absolute; left: 160px; top: 290px; font-size: 104px; font-weight: 650; letter-spacing: -0.04em; line-height: 1.02; }
+  .herosub { position: absolute; left: 160px; top: 560px; font-size: 40px; color: #3A404C; line-height: 1.3; }
+  .by { position: absolute; left: 160px; top: 760px; font-size: 26px; color: #5E6573; }
+  .cell { position: absolute; width: 142px; height: 142px; background: #FBFBFD; border-radius: 12px; box-shadow: 0 0 0 1.5px #CDD2DB; opacity: 0; }
+  .cell.on-human { background: #FBF0DC; box-shadow: 0 0 0 2.5px #E8A21A; }
+  .cid { position: absolute; left: 14px; top: 12px; font-size: 28px; font-weight: 600; }
+  .hdot { position: absolute; right: 14px; top: 16px; width: 16px; height: 16px; border-radius: 50%; background: #E8A21A; opacity: 0; }
+  .tpill { position: absolute; left: 10px; bottom: 26px; padding: 2px 8px; border-radius: 6px; background: #15181F; color: #fff; font-size: 20px; opacity: 0; }
+  .bar { position: absolute; left: 14px; right: 14px; bottom: 10px; height: 8px; border-radius: 4px; background: #2A4BD7; opacity: 0; transform-origin: 0 50%; }
+  .legend { position: absolute; left: 1000px; top: 944px; display: flex; gap: 30px; font-size: 24px; color: #3A404C; white-space: nowrap; opacity: 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 10px; }
+  .lg { display: inline-block; }
+  .lg.bar { position: static; width: 26px; height: 8px; border-radius: 4px; background: #2A4BD7; opacity: 1; }
+  .lg.pill { width: 26px; height: 16px; border-radius: 5px; background: #15181F; }
+  .lg.amb { width: 18px; height: 18px; border-radius: 50%; background: #E8A21A; }</style>
+  <div id="root" data-composition-id="s01" data-width="1920" data-height="1080">
+    <div id="s01-stage" class="stage">
+      <div id="s01-title" class="hero">Kesar &amp; Co.<br>support copilot</div>
+      <div id="s01-sub" class="herosub">25 customer emails in.<br>Drafts, tickets and human flags out.</div>
+      <div id="s01-by" class="by mono">Yatharth Chopra · AI Automation Intern assignment</div>
+      <div id="s01-c0" class="cell" style="left:1000px;top:150px">
+        <span class="cid mono">E01</span><span id="s01-h0" class="hdot"></span>
+        <span id="s01-t0" class="tpill mono"></span><span id="s01-b0" class="bar"></span></div>
+      <div id="s01-c1" class="cell" style="left:1156px;top:150px">
+        <span class="cid mono">E02</span><span id="s01-h1" class="hdot"></span>
+        <span id="s01-t1" class="tpill mono"></span><span id="s01-b1" class="bar"></span></div>
+      <div id="s01-c2" class="cell" style="left:1312px;top:150px">
+        <span class="cid mono">E03</span><span id="s01-h2" class="hdot"></span>
+        <span id="s01-t2" class="tpill mono">TKT-001</span><span id="s01-b2" class="bar"></span></div>
+      <div id="s01-c3" class="cell" style="left:1468px;top:150px">
+        <span class="cid mono">E04</span><span id="s01-h3" class="hdot"></span>
+        <span id="s01-t3" class="tpill mono">TKT-002</span><span id="s01-b3" class="bar"></span></div>
+      <div id="s01-c4" class="cell" style="left:1624px;top:150px">
+        <span class="cid mono">E05</span><span id="s01-h4" class="hdot"></span>
+        <span id="s01-t4" class="tpill mono"></span><span id="s01-b4" class="bar"></span></div>
+      <div id="s01-c5" class="cell" style="left:1000px;top:306px">
+        <span class="cid mono">E06</span><span id="s01-h5" class="hdot"></span>
+        <span id="s01-t5" class="tpill mono"></span><span id="s01-b5" class="bar"></span></div>
+      <div id="s01-c6" class="cell" style="left:1156px;top:306px">
+        <span class="cid mono">E07</span><span id="s01-h6" class="hdot"></span>
+        <span id="s01-t6" class="tpill mono"></span><span id="s01-b6" class="bar"></span></div>
+      <div id="s01-c7" class="cell" style="left:1312px;top:306px">
+        <span class="cid mono">E08</span><span id="s01-h7" class="hdot"></span>
+        <span id="s01-t7" class="tpill mono">TKT-003</span><span id="s01-b7" class="bar"></span></div>
+      <div id="s01-c8" class="cell" style="left:1468px;top:306px">
+        <span class="cid mono">E09</span><span id="s01-h8" class="hdot"></span>
+        <span id="s01-t8" class="tpill mono"></span><span id="s01-b8" class="bar"></span></div>
+      <div id="s01-c9" class="cell" style="left:1624px;top:306px">
+        <span class="cid mono">E10</span><span id="s01-h9" class="hdot"></span>
+        <span id="s01-t9" class="tpill mono"></span><span id="s01-b9" class="bar"></span></div>
+      <div id="s01-c10" class="cell" style="left:1000px;top:462px">
+        <span class="cid mono">E11</span><span id="s01-h10" class="hdot"></span>
+        <span id="s01-t10" class="tpill mono">TKT-004</span><span id="s01-b10" class="bar"></span></div>
+      <div id="s01-c11" class="cell" style="left:1156px;top:462px">
+        <span class="cid mono">E12</span><span id="s01-h11" class="hdot"></span>
+        <span id="s01-t11" class="tpill mono">TKT-005</span><span id="s01-b11" class="bar"></span></div>
+      <div id="s01-c12" class="cell" style="left:1312px;top:462px">
+        <span class="cid mono">E13</span><span id="s01-h12" class="hdot"></span>
+        <span id="s01-t12" class="tpill mono"></span><span id="s01-b12" class="bar"></span></div>
+      <div id="s01-c13" class="cell" style="left:1468px;top:462px">
+        <span class="cid mono">E14</span><span id="s01-h13" class="hdot"></span>
+        <span id="s01-t13" class="tpill mono">TKT-006</span><span id="s01-b13" class="bar"></span></div>
+      <div id="s01-c14" class="cell" style="left:1624px;top:462px">
+        <span class="cid mono">E15</span><span id="s01-h14" class="hdot"></span>
+        <span id="s01-t14" class="tpill mono"></span><span id="s01-b14" class="bar"></span></div>
+      <div id="s01-c15" class="cell" style="left:1000px;top:618px">
+        <span class="cid mono">E16</span><span id="s01-h15" class="hdot"></span>
+        <span id="s01-t15" class="tpill mono">TKT-007</span><span id="s01-b15" class="bar"></span></div>
+      <div id="s01-c16" class="cell" style="left:1156px;top:618px">
+        <span class="cid mono">E17</span><span id="s01-h16" class="hdot"></span>
+        <span id="s01-t16" class="tpill mono"></span><span id="s01-b16" class="bar"></span></div>
+      <div id="s01-c17" class="cell" style="left:1312px;top:618px">
+        <span class="cid mono">E18</span><span id="s01-h17" class="hdot"></span>
+        <span id="s01-t17" class="tpill mono"></span><span id="s01-b17" class="bar"></span></div>
+      <div id="s01-c18" class="cell" style="left:1468px;top:618px">
+        <span class="cid mono">E19</span><span id="s01-h18" class="hdot"></span>
+        <span id="s01-t18" class="tpill mono">TKT-008</span><span id="s01-b18" class="bar"></span></div>
+      <div id="s01-c19" class="cell" style="left:1624px;top:618px">
+        <span class="cid mono">E20</span><span id="s01-h19" class="hdot"></span>
+        <span id="s01-t19" class="tpill mono"></span><span id="s01-b19" class="bar"></span></div>
+      <div id="s01-c20" class="cell" style="left:1000px;top:774px">
+        <span class="cid mono">E21</span><span id="s01-h20" class="hdot"></span>
+        <span id="s01-t20" class="tpill mono">TKT-002</span><span id="s01-b20" class="bar"></span></div>
+      <div id="s01-c21" class="cell" style="left:1156px;top:774px">
+        <span class="cid mono">E22</span><span id="s01-h21" class="hdot"></span>
+        <span id="s01-t21" class="tpill mono"></span><span id="s01-b21" class="bar"></span></div>
+      <div id="s01-c22" class="cell" style="left:1312px;top:774px">
+        <span class="cid mono">E23</span><span id="s01-h22" class="hdot"></span>
+        <span id="s01-t22" class="tpill mono">TKT-009</span><span id="s01-b22" class="bar"></span></div>
+      <div id="s01-c23" class="cell" style="left:1468px;top:774px">
+        <span class="cid mono">E24</span><span id="s01-h23" class="hdot"></span>
+        <span id="s01-t23" class="tpill mono"></span><span id="s01-b23" class="bar"></span></div>
+      <div id="s01-c24" class="cell" style="left:1624px;top:774px">
+        <span class="cid mono">E25</span><span id="s01-h24" class="hdot"></span>
+        <span id="s01-t24" class="tpill mono"></span><span id="s01-b24" class="bar"></span></div>
+      <div id="s01-legend" class="legend"><span><i class="lg bar"></i>reply drafted</span><span><i class="lg pill"></i>ticket opened</span><span><i class="lg amb"></i>a person must check</span></div>
+    </div>
+    <div id="s01-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =false;
+    const OUT = true;
+    const DUR = 19.14;
+    if (IN) tl.fromTo('#s01-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s01-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s01-prog', { width: 0 }, { width: 136.1, duration: DUR, ease: 'none' }, 0);
+    tl.fromTo('#s01-title', { opacity: 1, y: 22 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }, 0);
+    tl.fromTo('#s01-sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 1.9);
+    tl.fromTo('#s01-by', { opacity: 0 }, { opacity: 1, duration: 0.6 }, 3.5);
+    tl.fromTo('#s01-c0', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.45);
+    tl.fromTo('#s01-b0', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.83);
+    tl.fromTo('#s01-c1', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.48);
+    tl.fromTo('#s01-b1', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.85);
+    tl.fromTo('#s01-c2', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.51);
+    tl.fromTo('#s01-b2', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.87);
+    tl.fromTo('#s01-t2', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.12);
+    tl.fromTo('#s01-c3', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.54);
+    tl.fromTo('#s01-b3', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.89);
+    tl.fromTo('#s01-t3', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.14);
+    tl.fromTo('#s01-c4', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.57);
+    tl.fromTo('#s01-b4', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.91);
+    tl.fromTo('#s01-c5', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.6);
+    tl.fromTo('#s01-c6', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.63);
+    tl.fromTo('#s01-b6', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.95);
+    tl.set('#s01-c6', { className: 'cell on-human' }, 10.53);
+    tl.fromTo('#s01-h6', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.53);
+    tl.fromTo('#s01-c7', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.66);
+    tl.fromTo('#s01-b7', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.97);
+    tl.fromTo('#s01-t7', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.25);
+    tl.set('#s01-c7', { className: 'cell on-human' }, 10.56);
+    tl.fromTo('#s01-h7', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.56);
+    tl.fromTo('#s01-c8', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.69);
+    tl.fromTo('#s01-b8', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 7.99);
+    tl.fromTo('#s01-c9', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.72);
+    tl.fromTo('#s01-b9', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.01);
+    tl.fromTo('#s01-c10', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.75);
+    tl.fromTo('#s01-b10', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.03);
+    tl.fromTo('#s01-t10', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.32);
+    tl.set('#s01-c10', { className: 'cell on-human' }, 10.65);
+    tl.fromTo('#s01-h10', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.65);
+    tl.fromTo('#s01-c11', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.78);
+    tl.fromTo('#s01-b11', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.05);
+    tl.fromTo('#s01-t11', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.35);
+    tl.set('#s01-c11', { className: 'cell on-human' }, 10.68);
+    tl.fromTo('#s01-h11', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.68);
+    tl.fromTo('#s01-c12', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.81);
+    tl.fromTo('#s01-b12', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.07);
+    tl.set('#s01-c12', { className: 'cell on-human' }, 10.71);
+    tl.fromTo('#s01-h12', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.71);
+    tl.fromTo('#s01-c13', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.84);
+    tl.fromTo('#s01-b13', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.09);
+    tl.fromTo('#s01-t13', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.39);
+    tl.fromTo('#s01-c14', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.87);
+    tl.fromTo('#s01-b14', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.11);
+    tl.fromTo('#s01-c15', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.9);
+    tl.fromTo('#s01-b15', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.13);
+    tl.fromTo('#s01-t15', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.45);
+    tl.set('#s01-c15', { className: 'cell on-human' }, 10.8);
+    tl.fromTo('#s01-h15', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.8);
+    tl.fromTo('#s01-c16', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.93);
+    tl.fromTo('#s01-b16', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.15);
+    tl.fromTo('#s01-c17', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.96);
+    tl.fromTo('#s01-b17', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.17);
+    tl.set('#s01-c17', { className: 'cell on-human' }, 10.86);
+    tl.fromTo('#s01-h17', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.86);
+    tl.fromTo('#s01-c18', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 5.99);
+    tl.fromTo('#s01-b18', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.19);
+    tl.fromTo('#s01-t18', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.52);
+    tl.fromTo('#s01-c19', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.02);
+    tl.fromTo('#s01-b19', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.21);
+    tl.set('#s01-c19', { className: 'cell on-human' }, 10.92);
+    tl.fromTo('#s01-h19', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.92);
+    tl.fromTo('#s01-c20', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.05);
+    tl.fromTo('#s01-b20', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.23);
+    tl.fromTo('#s01-t20', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.57);
+    tl.set('#s01-c20', { className: 'cell on-human' }, 10.95);
+    tl.fromTo('#s01-h20', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.95);
+    tl.fromTo('#s01-c21', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.08);
+    tl.fromTo('#s01-b21', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.25);
+    tl.set('#s01-c21', { className: 'cell on-human' }, 10.98);
+    tl.fromTo('#s01-h21', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 10.98);
+    tl.fromTo('#s01-c22', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.11);
+    tl.fromTo('#s01-b22', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.27);
+    tl.fromTo('#s01-t22', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 9.62);
+    tl.set('#s01-c22', { className: 'cell on-human' }, 11.01);
+    tl.fromTo('#s01-h22', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(1.6)' }, 11.01);
+    tl.fromTo('#s01-c23', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.14);
+    tl.fromTo('#s01-b23', { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: 'power3.out' }, 8.29);
+    tl.fromTo('#s01-c24', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 6.17);
+    tl.fromTo('#s01-legend', { opacity: 0 }, { opacity: 1, duration: 0.5 }, 8.23);
+
+    window.__timelines['s01'] = tl;
+  </script>
+</template>

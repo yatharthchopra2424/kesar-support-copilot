@@ -1,0 +1,120 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+</style>
+  <div id="root" data-composition-id="s05" data-width="1920" data-height="1080">
+    <div id="s05-stage" class="stage">
+      <div class="hd">E04 and E21: one order, one ticket</div>
+      <div class="sb">Two emails from the same customer, about six hours apart</div>
+      <div class="cam" data-layout-allow-overflow>
+      <div id="s05-w-e04_trace_top" class="world"><img src="assets/img/e04_trace_top.jpg" alt="">
+        <div id="s05-hl-0-0" class="hl" style="left:942px;top:94px;width:560px;height:242px"></div>
+        <div id="s05-hl-1-0" class="hl" style="left:280px;top:449px;width:658px;height:102px"></div>
+        <div id="s05-hl-2-0" class="hl" style="left:280px;top:559px;width:658px;height:87px"></div>
+      </div>
+      <div id="s05-w-e21_trace" class="world"><img src="assets/img/e21_trace.jpg" alt="">
+        <div id="s05-hl-3-0" class="hl" style="left:280px;top:144px;width:628px;height:32px"></div>
+        <div id="s05-hl-3-1" class="hl" style="left:942px;top:94px;width:560px;height:257px"></div>
+        <div id="s05-hl-5-0" class="hl" style="left:280px;top:539px;width:658px;height:135px"></div>
+      </div>
+      <div id="s05-w-tickets_board" class="world"><img src="assets/img/tickets_board.jpg" alt="">
+        <div id="s05-hl-4-0" class="hl" style="left:661px;top:356px;width:420px;height:174px"></div>
+        <div id="s05-hl-6-0" class="hl" style="left:240px;top:114px;width:1262px;height:85px"></div>
+      </div>
+      </div>
+      <div class="lb">
+      <div id="s05-lb-0" class="lbi"><div><div class="tt">E04: a cracked jar</div><div class="tx">Tanvi reports a cracked Ubtan Face Pack in order KC-1052.</div></div></div>
+      <div id="s05-lb-1" class="lbi"><span class="chip code">Code</span><div><div class="tt">Check eligibility</div><div class="tx">1 day since delivery, within the 48-hour damage window, photos attached: no.</div></div></div>
+      <div id="s05-lb-2" class="lbi"><span class="chip code">Code</span><div><div class="tt">Decide</div><div class="tx">Action: ask_photos_ticket_draft. A ticket is opened, priority Medium.</div></div></div>
+      <div id="s05-lb-3" class="lbi"><div><div class="tt">E21: the same order, now with photos</div><div class="tx">Same sender, same order KC-1052, two attachments, asks for a replacement.</div></div></div>
+      <div id="s05-lb-4" class="lbi"><span class="chip code">Code</span><div><div class="tt">TKT-002 now holds E04 and E21</div><div class="tx">One open ticket per order. The second email was added, not duplicated.</div></div></div>
+      <div id="s05-lb-5" class="lbi"><span class="chip human">Human</span><div><div class="tt">Needs a human: yes</div><div class="tx">Why a person should look: photos need checking.</div></div></div>
+      <div id="s05-lb-6" class="lbi"><span class="chip good">Good</span><div><div class="tt">0 duplicate open tickets</div><div class="tx">10 emails needed one. 9 tickets exist.</div></div></div>
+      </div>
+    </div>
+    <div id="s05-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =true;
+    const OUT = true;
+    const DUR = 33.66;
+    if (IN) tl.fromTo('#s05-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s05-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s05-prog', { width: 691.1 }, { width: 930.4, duration: DUR, ease: 'none' }, 0);
+    tl.set('#s05-w-e04_trace_top', { x: -960, y: -98.3, scale: 1.667 }, 0);
+    tl.fromTo('#s05-w-e04_trace_top', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.1);
+    tl.fromTo('#s05-hl-0-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.45);
+    tl.to('#s05-hl-0-0', { opacity: 0, duration: 0.25 }, 4.88);
+    tl.fromTo('#s05-lb-0', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.45);
+    tl.to('#s05-lb-0', { opacity: 0, duration: 0.2 }, 4.94);
+    tl.fromTo('#s05-w-e04_trace_top', { x: -960, y: -98.3, scale: 1.667 }, { x: -433.8, y: -782.1, scale: 2.095, duration: 0.85, ease: 'power3.inOut' }, 4.99);
+    tl.fromTo('#s05-hl-1-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.14);
+    tl.to('#s05-hl-1-0', { opacity: 0, duration: 0.25 }, 8.4);
+    tl.fromTo('#s05-lb-1', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 5.14);
+    tl.to('#s05-lb-1', { opacity: 0, duration: 0.2 }, 8.46);
+    tl.fromTo('#s05-w-e04_trace_top', { x: -433.8, y: -782.1, scale: 2.095 }, { x: -433.8, y: -935.8, scale: 2.095, duration: 0.85, ease: 'power3.inOut' }, 8.51);
+    tl.fromTo('#s05-hl-2-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.66);
+    tl.to('#s05-hl-2-0', { opacity: 0, duration: 0.25 }, 13.9);
+    tl.fromTo('#s05-lb-2', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 8.66);
+    tl.to('#s05-lb-2', { opacity: 0, duration: 0.2 }, 13.96);
+    tl.set('#s05-w-e21_trace', { x: -161.1, y: 0, scale: 1.147 }, 13.96);
+    tl.fromTo('#s05-w-e21_trace', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 13.96);
+    tl.to('#s05-w-e04_trace_top', { opacity: 0, duration: 0.2 }, 13.96);
+    tl.fromTo('#s05-hl-3-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 14.16);
+    tl.to('#s05-hl-3-0', { opacity: 0, duration: 0.25 }, 20.92);
+    tl.fromTo('#s05-hl-3-1', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 14.16);
+    tl.to('#s05-hl-3-1', { opacity: 0, duration: 0.25 }, 20.92);
+    tl.fromTo('#s05-lb-3', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 14.16);
+    tl.to('#s05-lb-3', { opacity: 0, duration: 0.2 }, 20.98);
+    tl.set('#s05-w-tickets_board', { x: -1114, y: -713.5, scale: 2.2 }, 20.98);
+    tl.fromTo('#s05-w-tickets_board', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 20.98);
+    tl.to('#s05-w-e21_trace', { opacity: 0, duration: 0.2 }, 20.98);
+    tl.fromTo('#s05-hl-4-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 21.18);
+    tl.to('#s05-hl-4-0', { opacity: 0, duration: 0.25 }, 26.18);
+    tl.fromTo('#s05-lb-4', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 21.18);
+    tl.to('#s05-lb-4', { opacity: 0, duration: 0.2 }, 26.24);
+    tl.set('#s05-w-e21_trace', { x: -433.8, y: -935.8, scale: 2.095 }, 26.240000000000002);
+    tl.fromTo('#s05-w-e21_trace', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 26.240000000000002);
+    tl.to('#s05-w-tickets_board', { opacity: 0, duration: 0.2 }, 26.240000000000002);
+    tl.fromTo('#s05-hl-5-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 26.44);
+    tl.to('#s05-hl-5-0', { opacity: 0, duration: 0.25 }, 30.02);
+    tl.fromTo('#s05-lb-5', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 26.44);
+    tl.to('#s05-lb-5', { opacity: 0, duration: 0.2 }, 30.08);
+    tl.set('#s05-w-tickets_board', { x: -161.1, y: 0, scale: 1.147 }, 30.080000000000002);
+    tl.fromTo('#s05-w-tickets_board', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 30.080000000000002);
+    tl.to('#s05-w-e21_trace', { opacity: 0, duration: 0.2 }, 30.080000000000002);
+    tl.fromTo('#s05-hl-6-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 30.28);
+    tl.to('#s05-hl-6-0', { opacity: 0, duration: 0.25 }, 32.96);
+    tl.fromTo('#s05-lb-6', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 30.28);
+
+    window.__timelines['s05'] = tl;
+  </script>
+</template>

@@ -1,0 +1,115 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+</style>
+  <div id="root" data-composition-id="s08" data-width="1920" data-height="1080">
+    <div id="s08-stage" class="stage">
+      <div class="hd">The Ops Console shows every step</div>
+      <div class="sb">A static site on Cloudflare. It reads the same data as the Google Sheet.</div>
+      <div class="cam" data-layout-allow-overflow>
+      <div id="s08-w-inbox" class="world"><img src="assets/img/inbox.jpg" alt="">
+        <div id="s08-hl-0-0" class="hl" style="left:240px;top:159px;width:1262px;height:52px"></div>
+      </div>
+      <div id="s08-w-e04_trace_top" class="world"><img src="assets/img/e04_trace_top.jpg" alt="">
+        <div id="s08-hl-1-0" class="hl" style="left:280px;top:186px;width:114px;height:32px"></div>
+        <div id="s08-hl-1-1" class="hl" style="left:280px;top:361px;width:153px;height:32px"></div>
+        <div id="s08-hl-1-2" class="hl" style="left:280px;top:449px;width:168px;height:33px"></div>
+        <div id="s08-hl-1-3" class="hl" style="left:280px;top:561px;width:110px;height:32px"></div>
+      </div>
+      <div id="s08-w-evals" class="world"><img src="assets/img/evals.jpg" alt="">
+        <div id="s08-hl-2-0" class="hl" style="left:253px;top:517px;width:613px;height:42px"></div>
+        <div id="s08-hl-2-1" class="hl" style="left:253px;top:597px;width:613px;height:42px"></div>
+      </div>
+      <div id="s08-w-cost" class="world"><img src="assets/img/cost.jpg" alt="">
+        <div id="s08-hl-3-0" class="hl" style="left:240px;top:256px;width:1262px;height:47px"></div>
+        <div id="s08-hl-4-0" class="hl" style="left:240px;top:342px;width:1262px;height:54px"></div>
+      </div>
+      </div>
+      <div class="lb">
+      <div id="s08-lb-0" class="lbi"><div><div class="tt">Inbox</div><div class="tx">All 25 emails, what the copilot did, who must look.</div></div></div>
+      <div id="s08-lb-1" class="lbi"><span class="chip llm">LLM</span><div><div class="tt">Trace: model or code?</div><div class="tx">Each step carries an LLM or Code badge, so you can see who made the call.</div></div></div>
+      <div id="s08-lb-2" class="lbi"><div><div class="tt">Evals</div><div class="tx">v1 and v2 scored by one script against the answer key. No model grades a model.</div></div></div>
+      <div id="s08-lb-3" class="lbi"><div><div class="tt">Cost</div><div class="tx">v2: 1,998 tokens in and 268 out per email, about $9.21 a month at 1,000 emails a day.</div></div></div>
+      <div id="s08-lb-4" class="lbi"><span class="chip human">Human</span><div><div class="tt">Price not confirmed for this model</div><div class="tx">Default prices are Gemini 2.5 Flash-Lite list prices. The model id here is an alias.</div></div></div>
+      </div>
+    </div>
+    <div id="s08-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =true;
+    const OUT = true;
+    const DUR = 28.57;
+    if (IN) tl.fromTo('#s08-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s08-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s08-prog', { width: 1430.7 }, { width: 1633.8, duration: DUR, ease: 'none' }, 0);
+    tl.set('#s08-w-inbox', { x: -161.1, y: 0, scale: 1.147 }, 0);
+    tl.fromTo('#s08-w-inbox', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.1);
+    tl.fromTo('#s08-hl-0-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.45);
+    tl.to('#s08-hl-0-0', { opacity: 0, duration: 0.25 }, 3.39);
+    tl.fromTo('#s08-lb-0', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.45);
+    tl.to('#s08-lb-0', { opacity: 0, duration: 0.2 }, 3.45);
+    tl.set('#s08-w-e04_trace_top', { x: 0, y: -131.1, scale: 1.05 }, 3.4499999999999997);
+    tl.fromTo('#s08-w-e04_trace_top', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 3.4499999999999997);
+    tl.to('#s08-w-inbox', { opacity: 0, duration: 0.2 }, 3.4499999999999997);
+    tl.fromTo('#s08-hl-1-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.65);
+    tl.to('#s08-hl-1-0', { opacity: 0, duration: 0.25 }, 8.12);
+    tl.fromTo('#s08-hl-1-1', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.65);
+    tl.to('#s08-hl-1-1', { opacity: 0, duration: 0.25 }, 8.12);
+    tl.fromTo('#s08-hl-1-2', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.65);
+    tl.to('#s08-hl-1-2', { opacity: 0, duration: 0.25 }, 8.12);
+    tl.fromTo('#s08-hl-1-3', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.65);
+    tl.to('#s08-hl-1-3', { opacity: 0, duration: 0.25 }, 8.12);
+    tl.fromTo('#s08-lb-1', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 3.65);
+    tl.to('#s08-lb-1', { opacity: 0, duration: 0.2 }, 8.18);
+    tl.set('#s08-w-evals', { x: 0, y: -160, scale: 1.05 }, 8.180000000000001);
+    tl.fromTo('#s08-w-evals', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 8.180000000000001);
+    tl.to('#s08-w-e04_trace_top', { opacity: 0, duration: 0.2 }, 8.180000000000001);
+    tl.fromTo('#s08-hl-2-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.38);
+    tl.to('#s08-hl-2-0', { opacity: 0, duration: 0.25 }, 13.96);
+    tl.fromTo('#s08-hl-2-1', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 8.38);
+    tl.to('#s08-hl-2-1', { opacity: 0, duration: 0.25 }, 13.96);
+    tl.fromTo('#s08-lb-2', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 8.38);
+    tl.to('#s08-lb-2', { opacity: 0, duration: 0.2 }, 14.02);
+    tl.set('#s08-w-cost', { x: -161.1, y: -92.6, scale: 1.147 }, 14.020000000000001);
+    tl.fromTo('#s08-w-cost', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 14.020000000000001);
+    tl.to('#s08-w-evals', { opacity: 0, duration: 0.2 }, 14.020000000000001);
+    tl.fromTo('#s08-hl-3-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 14.22);
+    tl.to('#s08-hl-3-0', { opacity: 0, duration: 0.25 }, 23.99);
+    tl.fromTo('#s08-lb-3', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 14.22);
+    tl.to('#s08-lb-3', { opacity: 0, duration: 0.2 }, 24.05);
+    tl.fromTo('#s08-w-cost', { x: -161.1, y: -92.6, scale: 1.147 }, { x: -161.1, y: -164.2, scale: 1.147, duration: 0.85, ease: 'power3.inOut' }, 24.1);
+    tl.fromTo('#s08-hl-4-0', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 24.25);
+    tl.to('#s08-hl-4-0', { opacity: 0, duration: 0.25 }, 27.87);
+    tl.fromTo('#s08-lb-4', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 24.25);
+
+    window.__timelines['s08'] = tl;
+  </script>
+</template>

@@ -1,0 +1,89 @@
+<template>
+  <style>
+@font-face { font-family: 'Geist'; src: url('assets/fonts/geist.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; }
+#root { position: absolute; inset: 0; font-family: 'Geist', sans-serif; color: #15181F; }
+#root * { box-sizing: border-box; }
+.stage { position: absolute; inset: 0; }
+.mono { font-family: 'Geist Mono', monospace; }
+.hd { position: absolute; left: 160px; top: 100px; font-size: 60px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.sb { position: absolute; left: 160px; top: 176px; font-size: 28px; color: #5E6573; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 8px; font-size: 28px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.25; }
+.chip.llm { background: #E8ECFC; color: #1F3AAB; }
+.chip.code { background: #15181F; color: #fff; }
+.chip.human { background: #FBF0DC; color: #8F5500; }
+.chip.bad { background: #FBE9E7; color: #B3261E; }
+.chip.good { background: #E5F3EC; color: #1F7A4D; }
+.cam { position: absolute; left: 160px; top: 232px; width: 1600px; height: 520px; overflow: hidden; border-radius: 14px; background: #0f0f10;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.08), 0 18px 44px rgba(21,24,31,.14); }
+.world { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; transform-origin: 0 0; opacity: 0; }
+.world img { position: absolute; left: 0; top: 0; width: 1536px; height: 695px; display: block; }
+.hl { position: absolute; border: 3px solid #E8A21A; border-radius: 8px; background: rgba(232,162,26,.14); opacity: 0; }
+.lb { position: absolute; left: 160px; top: 780px; width: 1600px; height: 192px; }
+.lbi { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px; background: #FBFBFD; border-radius: 14px; opacity: 0;
+  box-shadow: 0 0 0 1px #CDD2DB, 0 8px 24px rgba(21,24,31,.08); }
+.lbi .chip { flex: none; min-width: 108px; justify-content: center; }
+.lbi .tt { font-size: 44px; font-weight: 640; letter-spacing: -0.02em; line-height: 1.1; }
+.lbi .tx { font-size: 32px; color: #3A404C; line-height: 1.3; margin-top: 8px; }
+.prog { position: absolute; left: 0; top: 1052px; height: 10px; width: 0; background: #2A4BD7; border-radius: 0 5px 5px 0; }
+.card { position: absolute; background: #FBFBFD; border-radius: 14px; box-shadow: 0 0 0 1px #CDD2DB, 0 2px 6px rgba(21,24,31,.06), 0 14px 34px rgba(21,24,31,.1); }
+
+  .it { position: absolute; left: 160px; width: 940px; display: flex; gap: 22px; opacity: 0; }
+  .dotm { flex: none; width: 18px; height: 18px; margin-top: 18px; border-radius: 50%; background: #E8A21A; }
+  .itt { font-size: 44px; font-weight: 640; letter-spacing: -0.025em; line-height: 1.15; }
+  .itx { font-size: 30px; color: #3A404C; line-height: 1.3; margin-top: 6px; }
+  .vis { left: 1160px; width: 600px; height: 400px; padding: 30px; opacity: 0; }
+  .vt { font-size: 28px; font-weight: 620; margin-bottom: 14px; }
+  .vq { font-size: 22px; line-height: 1.4; color: #3A404C; max-height: 210px; overflow: hidden; }
+  .sr { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+  .sn { width: 190px; font-size: 28px; font-weight: 600; }
+  .sq { width: 40px; height: 40px; border-radius: 8px; background: #EEF0F4; box-shadow: inset 0 0 0 1.5px #CDD2DB; }
+  .sq.on { background: #E8A21A; box-shadow: none; } .sq.ok { background: #E5F3EC; box-shadow: inset 0 0 0 2px #1F7A4D; }
+  .vs { font-size: 28px; color: #5E6573; margin-top: 22px; line-height: 1.3; }</style>
+  <div id="root" data-composition-id="s09" data-width="1920" data-height="1080">
+    <div id="s09-stage" class="stage">
+      <div class="hd">What does not work yet</div>
+      <div class="sb">Found while testing, not fixed. Also listed in the test report.</div>
+      <div id="s09-i0" class="it" style="top:262px"><span class="dotm"></span><div><div class="itt">Two replies are too short</div><div class="itx">E02 and E16 have two sentences. The brand voice asks for three to six.</div></div></div>
+      <div id="s09-i1" class="it" style="top:394px"><span class="dotm"></span><div><div class="itt">A rare duplicate ticket</div><div class="itx">Two emails for one order at the same instant could both create a ticket.</div></div></div>
+      <div id="s09-i2" class="it" style="top:526px"><span class="dotm"></span><div><div class="itt">Confidence is a weak signal</div><div class="itx">16 of 25 emails scored exactly 1. The rules decide, not the score.</div></div></div>
+      <div id="s09-i3" class="it" style="top:658px"><span class="dotm"></span><div><div class="itt">The webhook has no password</div><div class="itx">It needs one before any real use.</div></div></div>
+      <div id="s09-i4" class="it" style="top:790px"><span class="dotm"></span><div><div class="itt">Only 25 emails tested</div><div class="itx">No long threads, and no readable attachments.</div></div></div>
+      <div id="s09-v0" class="card vis" style="top:262px"><div class="vt">Sentences in the reply body</div><div class="sr"><span class="sn">E02</span><span class="sq on"></span><span class="sq on"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span></div><div class="sr"><span class="sn">E16</span><span class="sq on"></span><span class="sq on"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span></div><div class="sr"><span class="sn">Brand voice</span><span class="sq"></span><span class="sq"></span><span class="sq ok"></span><span class="sq ok"></span><span class="sq ok"></span><span class="sq ok"></span></div><div class="vs">Wants 3 to 6. E02 and E16 have 2.</div></div>
+      <div id="s09-v1" class="card vis" style="top:262px"><div class="vt">How it can happen</div>
+        <svg width="560" height="250" viewBox="0 0 560 250"><text x="0" y="40" font-size="22" fill="#3A404C" font-family="Geist">Email A</text><text x="0" y="130" font-size="22" fill="#3A404C" font-family="Geist">Email B</text>
+          <rect x="90" y="14" width="150" height="40" rx="8" fill="#E8ECFC"/><text x="102" y="41" font-size="20" fill="#1F3AAB" font-family="Geist">read tickets</text>
+          <rect x="300" y="14" width="150" height="40" rx="8" fill="#15181F"/><text x="312" y="41" font-size="20" fill="#fff" font-family="Geist">write ticket</text>
+          <rect x="150" y="104" width="150" height="40" rx="8" fill="#E8ECFC"/><text x="162" y="131" font-size="20" fill="#1F3AAB" font-family="Geist">read tickets</text>
+          <rect x="360" y="104" width="150" height="40" rx="8" fill="#15181F"/><text x="372" y="131" font-size="20" fill="#fff" font-family="Geist">write ticket</text>
+          <text x="0" y="200" font-size="22" fill="#B3261E" font-family="Geist">B reads before A writes: both see no ticket.</text></svg></div>
+      <div id="s09-v2" class="card vis" style="top:262px"><div class="vt">Model confidence, 25 emails</div>
+        <svg width="560" height="220" viewBox="0 0 560 220"><line x1="30" y1="30" x2="550" y2="30" stroke="#CDD2DB"/><text data-layout-ignore x="0" y="36" font-size="18" fill="#5E6573" font-family="Geist Mono">1.0</text><text data-layout-ignore x="0" y="186" font-size="18" fill="#5E6573" font-family="Geist Mono">.8</text><circle cx="40.0" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="60.8" cy="45.0" r="9" fill="#E8A21A"/><circle cx="81.7" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="102.5" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="123.3" cy="37.5" r="9" fill="#E8A21A"/><circle cx="144.2" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="165.0" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="185.8" cy="37.5" r="9" fill="#E8A21A"/><circle cx="206.7" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="227.5" cy="67.5" r="9" fill="#E8A21A"/><circle cx="248.3" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="269.2" cy="45.0" r="9" fill="#E8A21A"/><circle cx="290.0" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="310.8" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="331.7" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="352.5" cy="67.5" r="9" fill="#E8A21A"/><circle cx="373.3" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="394.2" cy="142.5" r="9" fill="#E8A21A"/><circle cx="415.0" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="435.8" cy="67.5" r="9" fill="#E8A21A"/><circle cx="456.7" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="477.5" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="498.3" cy="30.0" r="9" fill="#2A4BD7"/><circle cx="519.2" cy="67.5" r="9" fill="#E8A21A"/><circle cx="540.0" cy="30.0" r="9" fill="#2A4BD7"/></svg>
+        <div class="vs"><b style="color:#2A4BD7">Blue</b> scored 1. <b style="color:#8F5500">Amber</b> scored below.</div></div>
+    </div>
+    <div id="s09-prog" class="prog"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const IN =true;
+    const OUT = true;
+    const DUR = 29.66;
+    if (IN) tl.fromTo('#s09-stage', { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'power4.out' }, 0);
+    if (OUT) tl.to('#s09-stage', { x: -140, opacity: 0, duration: 0.4, ease: 'power4.in' }, DUR - 0.4);
+    // film progress: one thin line that fills across the whole video, so the viewer always knows how far in they are
+    tl.fromTo('#s09-prog', { width: 1633.8 }, { width: 1844.7, duration: DUR, ease: 'none' }, 0);
+    tl.fromTo('#s09-i0', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 2.73);
+    tl.fromTo('#s09-v0', { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 2.83);
+    tl.to('#s09-v0', { opacity: 0, duration: 0.25 }, 9.22);
+    tl.fromTo('#s09-i1', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 9.32);
+    tl.fromTo('#s09-v1', { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 9.42);
+    tl.to('#s09-v1', { opacity: 0, duration: 0.25 }, 17.24);
+    tl.fromTo('#s09-i2', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 17.34);
+    tl.fromTo('#s09-v2', { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 17.44);
+    tl.to('#s09-v2', { opacity: 0, duration: 0.25 }, 23.16);
+    tl.fromTo('#s09-i3', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 23.26);
+    tl.fromTo('#s09-i4', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 25.69);
+
+    window.__timelines['s09'] = tl;
+  </script>
+</template>
